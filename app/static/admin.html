@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Gateway 管理后台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-950 dark:bg-slate-950 dark:text-slate-100" x-data="gatewayApp()" x-init="init()">
+<div class="min-h-screen lg:grid lg:grid-cols-[240px_1fr]">
+    <aside class="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 lg:min-h-screen lg:border-b-0 lg:border-r">
+        <div class="flex h-16 items-center gap-3 px-5">
+            <div class="flex h-9 w-9 items-center justify-center rounded bg-blue-600 text-sm font-bold text-white">AI</div>
+            <div>
+                <h1 class="text-base font-semibold">AI Gateway</h1>
+                <p class="text-xs text-slate-500 dark:text-slate-400">管理后台</p>
+            </div>
+        </div>
+
+        <nav class="flex gap-1 overflow-x-auto px-3 pb-3 lg:block lg:space-y-1 lg:overflow-visible lg:pb-0">
+            <button x-show="canAccessModule('keys')" @click="currentPage='keys'; loadKeys()" :class="currentPage==='keys' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-200' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'" class="nav-button">密钥池</button>
+            <button x-show="canAccessModule('usage')" @click="currentPage='usage'; loadUsage()" :class="currentPage==='usage' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-200' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'" class="nav-button">用量统计</button>
+            <button x-show="canAccessModule('logs')" @click="currentPage='logs'; loadLogs()" :class="currentPage==='logs' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-200' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'" class="nav-button">请求日志</button>
+            <button x-show="currentUser?.role === 'user'" @click="currentPage='models'; prototypeFeedback=''; loadAvailableModels()" :class="currentPage==='models' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-200' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'" class="nav-button">申请模型</button>
+            <button x-show="currentUser?.role === 'admin'" @click="currentPage='models'; prototypeFeedback=''; loadAvailableModels()" :class="currentPage==='models' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-200' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'" class="nav-button">模型申请</button>
+            <button x-show="canAccessModule('users')" @click="currentPage='users'; loadUsers()" :class="currentPage==='users' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-200' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'" class="nav-button">用户与权限</button>
+            <button x-show="canAccessModule('config')" @click="currentPage='config'; loadConfig()" :class="currentPage==='config' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-200' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'" class="nav-button">配置管理</button>
+        </nav>
+    </aside>
+
+    <div class="min-w-0">
+        <header class="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 sm:px-6">
+            <div>
+                <p class="text-xs text-slate-500 dark:text-slate-400" x-text="currentUser?.role === 'admin' ? '管理员' : currentUser?.role === 'operator' ? '运营人员' : '普通用户'"></p>
+                <h2 class="text-lg font-semibold" x-text="currentPage==='keys' ? '密钥池' : currentPage==='usage' ? '用量统计' : currentPage==='logs' ? '请求日志' : currentPage==='models' ? '模型申请' : currentPage==='users' ? '用户与权限' : '配置管理'"></h2>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="hidden max-w-[240px] truncate text-sm text-slate-500 dark:text-slate-300 sm:inline" x-text="currentUser?.username || ''"></span>
+                <button @click="toggleTheme()" class="icon-button" x-text="darkMode ? '☀' : '☾'" title="切换主题"></button>
+                <button @click="logout()" class="secondary-button">退出登录</button>
+            </div>
+        </header>
+
+        <main class="mx-auto max-w-7xl p-4 sm:p-6">
+            <section x-show="currentPage==='keys' && canAccessModule('keys')" class="space-y-5">
+                <div class="section-toolbar">
+                    <div>
+                        <h3 class="section-title">密钥池概览</h3>
+                        <p class="section-subtitle">按提供商查看可用密钥和健康状态。</p>
+                    </div>
+                    <button @click="loadKeys()" class="primary-button">刷新</button>
+                </div>
+
+                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    <template x-for="[name, pool] in Object.entries(keysData)" :key="name">
+                        <button @click="toggleProvider(name)" class="provider-card" :class="pool.available === 0 ? 'provider-card-red' : pool.available < pool.total ? 'provider-card-yellow' : 'provider-card-green'">
+                            <span class="text-sm font-semibold uppercase tracking-wide" x-text="name"></span>
+                            <span class="mt-3 block text-3xl font-semibold" x-text="`${pool.available}/${pool.total}`"></span>
+                            <span class="mt-1 block text-sm text-slate-500 dark:text-slate-400" x-text="pool.strategy || 'round-robin'"></span>
+                        </button>
+                    </template>
+                </div>
+
+                <template x-for="[name, pool] in Object.entries(keysData)" :key="'detail-'+name">
+                    <div x-show="expandedProvider===name" class="panel">
+                        <div class="panel-header">
+                            <h4 class="font-semibold capitalize" x-text="name"></h4>
+                            <span class="text-sm text-slate-500" x-text="`策略：${pool.strategy || '-'}`"></span>
+                        </div>
+                        <div class="provider-detail-grid">
+                            <div>
+                                <span class="detail-label">Base URL</span>
+                                <div class="detail-value font-mono" x-text="providerBaseUrl(name) || '未配置'"></div>
+                            </div>
+                            <div>
+                                <span class="detail-label">模型</span>
+                                <div class="model-list" x-show="providerModels(name).length">
+                                    <template x-for="model in providerModels(name)" :key="model.source + '-' + model.value">
+                                        <span class="model-pill" x-text="model.label"></span>
+                                    </template>
+                                </div>
+                                <div class="detail-value" x-show="!providerModels(name).length">暂无模型映射</div>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>后缀</th>
+                                        <th>状态</th>
+                                        <th>使用次数</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template x-for="key in pool.keys || []" :key="key.suffix">
+                                        <tr>
+                                            <td class="font-mono" x-text="key.suffix"></td>
+                                            <td><span class="status-pill" :class="key.status==='active' ? 'status-ok' : key.status==='rate_limited' ? 'status-warn' : 'status-bad'" x-text="key.status"></span></td>
+                                            <td class="font-mono" x-text="key.use_count"></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </template>
+            </section>
+
+            <section x-show="currentPage==='usage'" class="space-y-5">
+                <div class="section-toolbar">
+                    <div>
+                        <h3 class="section-title">用量统计</h3>
+                        <p class="section-subtitle">Token、成本和请求量汇总。</p>
+                    </div>
+                    <div class="segmented">
+                        <template x-for="p in ['today','week','month']" :key="p">
+                            <button @click="usagePeriod=p; loadUsage()" :class="usagePeriod===p ? 'segmented-active' : ''" x-text="p==='today'?'今日':p==='week'?'本周':'本月'"></button>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="grid gap-4 md:grid-cols-3">
+                    <div class="metric-card">
+                        <span>总 Token</span>
+                        <strong x-text="usageData.total_tokens?.toLocaleString() || '0'"></strong>
+                    </div>
+                    <div class="metric-card">
+                        <span>总成本 USD</span>
+                        <strong x-text="'$' + (usageData.total_cost_usd || 0).toFixed(6)"></strong>
+                    </div>
+                    <div class="metric-card">
+                        <span>请求数</span>
+                        <strong x-text="Object.values(usageData.by_model||{}).reduce((s,m)=>s+m.requests,0).toLocaleString()"></strong>
+                    </div>
+                </div>
+
+                <div class="panel p-4">
+                    <canvas id="usageChart" height="200"></canvas>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header"><h4 class="font-semibold">租户分布</h4></div>
+                    <div class="overflow-x-auto">
+                        <table class="data-table">
+                            <thead><tr><th>租户</th><th>Token</th><th>成本</th></tr></thead>
+                            <tbody>
+                                <template x-for="[name, data] in Object.entries(usageData.by_tenant||{})" :key="name">
+                                    <tr>
+                                        <td x-text="name"></td>
+                                        <td class="font-mono" x-text="data.tokens?.toLocaleString()"></td>
+                                        <td class="font-mono" x-text="'$' + (data.cost||0).toFixed(6)"></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section x-show="currentPage==='logs'" class="space-y-5">
+                <div class="section-toolbar">
+                    <div>
+                        <h3 class="section-title">请求日志</h3>
+                        <p class="section-subtitle">最近请求按时间倒序展示。</p>
+                    </div>
+                    <button @click="logsOffset=0; loadLogs()" class="primary-button">刷新</button>
+                </div>
+
+                <div class="panel overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="data-table">
+                            <thead><tr><th>时间</th><th>租户</th><th>模型</th><th>状态</th><th>延迟</th><th>提供商</th></tr></thead>
+                            <tbody>
+                                <template x-for="log in logsData.items || []" :key="log.request_id">
+                                    <tr @click="expandedLog = expandedLog===log.request_id ? null : log.request_id" class="cursor-pointer">
+                                        <td class="font-mono text-xs" x-text="formatLogTime(log.timestamp)"></td>
+                                        <td x-text="log.tenant || '-'"></td>
+                                        <td class="font-mono text-xs" x-text="log.model || '-'"></td>
+                                        <td><span class="status-pill" :class="log.status===200 ? 'status-ok' : log.status===429 ? 'status-warn' : 'status-bad'" x-text="log.status || '-'"></span></td>
+                                        <td class="font-mono" x-text="log.latency_ms ? `${log.latency_ms}ms` : '-'"></td>
+                                        <td x-text="log.provider || '-'"></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="text-center">
+                    <button @click="logsOffset += 50; loadLogs()" class="secondary-button">加载更多</button>
+                </div>
+            </section>
+
+            <section x-show="currentPage==='models' && canAccessModule('models') && currentUser?.role === 'user'" class="space-y-5">
+                <div class="section-toolbar">
+                    <div>
+                        <h3 class="section-title">申请模型</h3>
+                        <p class="section-subtitle">选择需要使用的模型，管理员审批后将成为你的可用模型。</p>
+                    </div>
+                    <span class="status-pill" :class="pendingPrototypeRequest() ? 'status-warn' : prototypeBinding()?.status === 'active' ? 'status-ok' : prototypeBinding()?.status === 'stopped' ? 'status-bad' : ''"
+                          x-text="pendingPrototypeRequest() ? '审批中' : prototypeBinding()?.status === 'active' ? '已绑定' : prototypeBinding()?.status === 'stopped' ? '已停止' : '未绑定'"></span>
+                </div>
+
+                <div x-show="prototypeFeedback" x-transition class="rounded border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-200" x-text="prototypeFeedback"></div>
+
+                <div class="panel model-binding-summary">
+                    <div>
+                        <span class="detail-label">当前绑定模型</span>
+                        <template x-if="prototypeBinding()">
+                            <div>
+                                <div class="text-lg font-semibold" x-text="prototypeBinding().alias"></div>
+                                <div class="mt-1 font-mono text-sm text-slate-500 dark:text-slate-400" x-text="`${prototypeBinding().model} / ${prototypeBinding().provider}`"></div>
+                            </div>
+                        </template>
+                        <p x-show="prototypeBinding()?.status === 'stopped'" class="text-sm text-red-600 dark:text-red-300">管理员已停止使用此模型，恢复后才可继续使用。</p>
+                        <p x-show="!prototypeBinding()" class="text-sm text-slate-500 dark:text-slate-400">暂无已审批通过的模型，请从下方发起申请。</p>
+                    </div>
+                    <div x-show="latestPrototypeRequest()" class="model-request-latest">
+                        <span class="detail-label">最近一次申请</span>
+                        <div class="flex items-center gap-2">
+                            <span class="font-semibold" x-text="latestPrototypeRequest()?.alias"></span>
+                            <span class="status-pill" :class="prototypeRequestStatusClass(latestPrototypeRequest()?.status)" x-text="prototypeRequestStatusLabel(latestPrototypeRequest()?.status)"></span>
+                        </div>
+                        <div class="mt-2 text-xs text-slate-500" x-text="formatPrototypeTime(latestPrototypeRequest()?.created_at)"></div>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="mb-3 font-semibold">可申请模型</h4>
+                    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                        <template x-for="model in prototypeModels" :key="model.alias">
+                            <article class="panel model-application-card">
+                                <div class="model-card-topline">
+                                    <div class="model-card-icon" x-text="model.provider?.substring(0, 2).toUpperCase() || 'AI'"></div>
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <h5 class="model-card-title" x-text="model.alias"></h5>
+                                            <span class="status-pill" :class="model.status === '可用' ? 'status-ok' : 'status-bad'" x-text="model.status"></span>
+                                        </div>
+                                        <p class="model-card-model" x-text="model.model"></p>
+                                    </div>
+                                </div>
+
+                                <div class="model-card-meta">
+                                    <div>
+                                        <span>Provider</span>
+                                        <strong x-text="model.provider"></strong>
+                                    </div>
+                                    <div>
+                                        <span>申请方式</span>
+                                        <strong x-text="prototypeBinding() ? (prototypeBinding().status === 'stopped' ? '重新申请' : '更换审批') : '首次审批'"></strong>
+                                    </div>
+                                </div>
+
+                                <p class="model-card-description" x-text="model.description"></p>
+                                <button @click="submitPrototypeRequest(model)" class="model-card-action primary-button"
+                                        :disabled="!canSubmitPrototypeRequest(model)"
+                                        :class="!canSubmitPrototypeRequest(model) ? 'opacity-45 cursor-not-allowed' : ''"
+                                        x-text="prototypeBinding()?.alias === model.alias ? (prototypeBinding()?.status === 'stopped' ? '已停止使用' : '当前已绑定') : pendingPrototypeRequest() ? '已有申请待审批' : prototypeBinding() ? '申请更换' : '申请使用'"></button>
+                            </article>
+                        </template>
+                    </div>
+                </div>
+            </section>
+
+            <section x-show="currentPage==='models' && canAccessModule('models') && currentUser?.role === 'admin'" class="space-y-5">
+                <div class="section-toolbar">
+                    <div>
+                        <h3 class="section-title">模型申请</h3>
+                        <p class="section-subtitle">先处理申请审批，再管理已绑定用户的停用与恢复。</p>
+                    </div>
+                    <span class="status-pill status-warn" x-text="`${prototypeWorkflow.requests.filter(request => request.status === 'pending').length} 项待处理`"></span>
+                </div>
+
+                <div x-show="prototypeFeedback" x-transition class="rounded border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-200" x-text="prototypeFeedback"></div>
+
+                <div class="model-admin-tabs">
+                    <button @click="modelAdminTab='requests'" :class="modelAdminTab === 'requests' ? 'model-admin-tab-active' : ''">
+                        <span>审批申请</span>
+                        <strong x-text="prototypeWorkflow.requests.filter(request => request.status === 'pending').length"></strong>
+                    </button>
+                    <button @click="modelAdminTab='bindings'" :class="modelAdminTab === 'bindings' ? 'model-admin-tab-active' : ''">
+                        <span>用户绑定</span>
+                        <strong x-text="(prototypeWorkflow.bindings || []).length"></strong>
+                    </button>
+                </div>
+
+                <div class="grid gap-4 md:grid-cols-3">
+                    <div class="metric-card">
+                        <span>待审批申请</span>
+                        <strong x-text="prototypeWorkflow.requests.filter(request => request.status === 'pending').length"></strong>
+                    </div>
+                    <div class="metric-card">
+                        <span>已通过申请</span>
+                        <strong x-text="prototypeWorkflow.requests.filter(request => request.status === 'approved').length"></strong>
+                    </div>
+                    <div class="metric-card">
+                        <span>当前绑定用户</span>
+                        <strong x-text="(prototypeWorkflow.bindings || []).length"></strong>
+                    </div>
+                </div>
+
+                <div x-show="modelAdminTab === 'requests'" class="panel overflow-hidden">
+                    <div class="panel-header">
+                        <h4 class="font-semibold">申请记录</h4>
+                        <span class="text-xs text-slate-500">只处理用户申请与更换</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>申请用户</th>
+                                    <th>申请模型</th>
+                                    <th>Provider</th>
+                                    <th>申请类型</th>
+                                    <th>提交时间</th>
+                                    <th>状态</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="request in prototypeWorkflow.requests" :key="request.id">
+                                    <tr>
+                                        <td class="font-semibold" x-text="request.username"></td>
+                                        <td>
+                                            <div class="font-semibold" x-text="request.alias"></div>
+                                            <div class="font-mono text-xs text-slate-500" x-text="request.model"></div>
+                                        </td>
+                                        <td><span class="model-pill" x-text="request.provider"></span></td>
+                                        <td x-text="prototypeRequestTypeLabel(request.type)"></td>
+                                        <td class="font-mono text-xs" x-text="formatPrototypeTime(request.created_at)"></td>
+                                        <td><span class="status-pill" :class="prototypeRequestStatusClass(request.status)" x-text="prototypeRequestStatusLabel(request.status)"></span></td>
+                                        <td class="whitespace-nowrap">
+                                            <template x-if="request.status === 'pending'">
+                                                <div class="flex gap-2">
+                                                    <button @click="approvePrototypeRequest(request.id)" class="link-button">通过</button>
+                                                    <button @click="rejectPrototypeRequest(request.id)" class="danger-button">拒绝</button>
+                                                </div>
+                                            </template>
+                                            <span x-show="request.status !== 'pending'" class="text-xs text-slate-400">已处理</span>
+                                        </td>
+                                    </tr>
+                                </template>
+                                <tr x-show="prototypeWorkflow.requests.length === 0">
+                                    <td colspan="7" class="text-center text-slate-500">暂无模型申请，请先使用普通用户账号提交申请。</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div x-show="modelAdminTab === 'bindings'" class="panel overflow-hidden">
+                    <div class="panel-header">
+                        <h4 class="font-semibold">用户绑定管理</h4>
+                        <span class="text-xs text-slate-500">只管理已绑定模型的停止与恢复</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>用户</th>
+                                    <th>绑定模型</th>
+                                    <th>Provider</th>
+                                    <th>状态</th>
+                                    <th>更新时间</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="binding in prototypeWorkflow.bindings" :key="binding.id">
+                                    <tr>
+                                        <td class="font-semibold" x-text="binding.username"></td>
+                                        <td>
+                                            <div class="font-semibold" x-text="binding.alias"></div>
+                                            <div class="font-mono text-xs text-slate-500" x-text="binding.model"></div>
+                                        </td>
+                                        <td><span class="model-pill" x-text="binding.provider"></span></td>
+                                        <td><span class="status-pill" :class="bindingStatusClass(binding.status)" x-text="bindingStatusLabel(binding.status)"></span></td>
+                                        <td class="font-mono text-xs" x-text="formatPrototypeTime(binding.updated_at)"></td>
+                                        <td class="whitespace-nowrap">
+                                            <button x-show="binding.status === 'active'" @click="stopModelBinding(binding.id)" class="danger-button">停止使用</button>
+                                            <button x-show="binding.status === 'stopped'" @click="resumeModelBinding(binding.id)" class="link-button">恢复使用</button>
+                                        </td>
+                                    </tr>
+                                </template>
+                                <tr x-show="(prototypeWorkflow.bindings || []).length === 0">
+                                    <td colspan="6" class="text-center text-slate-500">暂无已绑定用户</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section x-show="currentPage==='users' && currentUser?.role === 'admin'" class="space-y-5">
+                <div class="section-toolbar">
+                    <div>
+                        <h3 class="section-title">用户与权限</h3>
+                        <p class="section-subtitle">查看后台账号、角色和租户范围。</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button @click="openCreateUser()" class="primary-button">新增用户</button>
+                        <button @click="loadUsers()" class="secondary-button">刷新</button>
+                    </div>
+                </div>
+
+                <div class="panel p-4">
+                    <div class="grid gap-3 md:grid-cols-[1fr_180px]">
+                        <input x-model="userSearch" class="table-input" placeholder="搜索账号、邮箱、手机号或租户">
+                        <select x-model="userRoleFilter" class="table-input">
+                            <option value="all">全部角色</option>
+                            <option value="admin">admin</option>
+                            <option value="operator">operator</option>
+                            <option value="user">user</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="panel overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>账号</th>
+                                    <th>联系方式</th>
+                                    <th>角色</th>
+                                    <th>模块权限</th>
+                                    <th>租户</th>
+                                    <th>注册时间</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="user in filteredUsers()" :key="user.id">
+                                    <tr>
+                                        <td>
+                                            <div class="font-semibold" x-text="user.username"></div>
+                                            <div class="text-xs text-slate-500" x-text="`ID ${user.id}`"></div>
+                                        </td>
+                                        <td class="text-sm">
+                                            <div x-text="user.email || '-'"></div>
+                                            <div class="text-xs text-slate-500" x-text="user.phone || ''"></div>
+                                        </td>
+                                        <td><span class="status-pill" :class="user.role==='admin' ? 'status-ok' : user.role==='operator' ? 'status-warn' : ''" x-text="user.role"></span></td>
+                                        <td>
+                                            <div class="model-list">
+                                                <template x-for="module in effectiveUserModules(user)" :key="module">
+                                                    <span class="model-pill" x-text="moduleLabel(module)"></span>
+                                                </template>
+                                            </div>
+                                            <div class="mt-1 text-xs text-slate-500" x-text="user.module_overrides ? '自定义' : '角色默认'"></div>
+                                        </td>
+                                        <td class="font-mono text-xs" x-text="user.tenant || '-'"></td>
+                                        <td class="font-mono text-xs" x-text="user.created_at ? user.created_at.replace('T',' ').substring(0,19) : '-'"></td>
+                                        <td class="whitespace-nowrap">
+                                            <button @click="openEditUser(user)" class="link-button">编辑</button>
+                                            <button @click="deleteUser(user)" class="danger-button" :disabled="user.id === currentUser?.id" :class="user.id === currentUser?.id ? 'opacity-40' : ''">删除</button>
+                                        </td>
+                                    </tr>
+                                </template>
+                                <tr x-show="filteredUsers().length === 0">
+                                    <td colspan="7" class="text-center text-slate-500">暂无用户</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div x-show="showUserModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4">
+                    <div class="w-full max-w-xl rounded bg-white p-5 shadow-xl dark:bg-slate-900">
+                        <div class="mb-4 flex items-center justify-between">
+                            <h4 class="font-semibold" x-text="editingUserId ? '编辑用户' : '新增用户'"></h4>
+                            <button @click="showUserModal=false" class="icon-button">×</button>
+                        </div>
+                        <div class="space-y-3">
+                            <label class="detail-field">
+                                <span>账号</span>
+                                <input x-model="userForm.username" class="table-input" placeholder="user@example.com">
+                            </label>
+                            <label class="detail-field">
+                                <span x-text="editingUserId ? '密码（留空则不修改）' : '密码'"></span>
+                                <input x-model="userForm.password" type="password" class="table-input" placeholder="至少 8 位">
+                            </label>
+                            <div class="grid gap-3 md:grid-cols-2">
+                                <label class="detail-field">
+                                    <span>邮箱</span>
+                                    <input x-model="userForm.email" type="email" class="table-input" placeholder="name@example.com">
+                                </label>
+                                <label class="detail-field">
+                                    <span>手机</span>
+                                    <input x-model="userForm.phone" class="table-input" placeholder="可选">
+                                </label>
+                            </div>
+                            <div class="grid gap-3 md:grid-cols-2">
+                                <label class="detail-field">
+                                    <span>角色</span>
+                                    <select x-model="userForm.role" class="table-input" @change="if (userUseRoleDefault) userModuleSelection = roleModules(userForm.role)">
+                                        <option value="admin">admin</option>
+                                        <option value="operator">operator</option>
+                                        <option value="user">user</option>
+                                    </select>
+                                </label>
+                                <label class="detail-field">
+                                    <span>租户</span>
+                                    <input x-model="userForm.tenant" class="table-input font-mono text-xs" placeholder="default">
+                                </label>
+                            </div>
+                            <div class="detail-field">
+                                <span>模块权限</span>
+                                <label class="mb-2 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                                    <input type="checkbox" x-model="userUseRoleDefault" @change="if (userUseRoleDefault) userModuleSelection = roleModules(userForm.role)">
+                                    <span>使用角色默认权限</span>
+                                </label>
+                                <div class="grid gap-2 md:grid-cols-2">
+                                    <template x-for="module in allModules()" :key="module">
+                                        <label class="permission-toggle" :class="userUseRoleDefault ? 'opacity-60' : ''">
+                                            <input type="checkbox" :checked="(userUseRoleDefault ? roleModules(userForm.role) : userModuleSelection).includes(module)" :disabled="userUseRoleDefault" @change="toggleUserModule(module)">
+                                            <span x-text="moduleLabel(module)"></span>
+                                        </label>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-5 flex justify-end gap-2">
+                            <button @click="showUserModal=false" class="secondary-button">取消</button>
+                            <button @click="saveUser()" class="primary-button">保存</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section x-show="currentPage==='config' && currentUser?.role === 'admin'" class="space-y-5">
+                <div class="section-toolbar">
+                    <div>
+                        <h3 class="section-title">配置管理</h3>
+                        <p class="section-subtitle">路由、别名、密钥池和降级规则。</p>
+                    </div>
+                    <button @click="saveConfig()" class="primary-button">保存配置</button>
+                </div>
+
+                <div x-show="configSaved" x-transition class="rounded border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">配置已保存并生效</div>
+
+                <div class="config-grid">
+                    <div class="panel">
+                        <div class="panel-header"><h4 class="font-semibold">路由规则</h4><button @click="configData.routes.push({pattern:'', provider:''})" class="link-button">添加</button></div>
+                        <div class="overflow-x-auto">
+                            <table class="data-table">
+                                <thead><tr><th>Pattern</th><th>Provider</th><th></th></tr></thead>
+                                <tbody>
+                                    <template x-for="(route, i) in configData.routes || []" :key="i">
+                                        <tr>
+                                            <td><input x-model="route.pattern" class="table-input"></td>
+                                            <td><input x-model="route.provider" class="table-input"></td>
+                                            <td><button @click="deleteRoute(i)" class="danger-button">删除</button></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h4 class="font-semibold">模型别名</h4>
+                            <div class="flex items-center gap-2">
+                                <button @click="openModelWizard()" class="primary-button">新增模型</button>
+                                <button @click="addAlias()" class="link-button">添加别名</button>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="data-table">
+                                <thead><tr><th>别名</th><th>模型</th><th>是否可用</th><th></th></tr></thead>
+                                <tbody>
+                                    <template x-for="[alias, model] in Object.entries(configData.aliases || {})" :key="alias">
+                                        <tr>
+                                            <td><input :value="alias" @change="renameAlias(alias, $event.target.value)" class="table-input font-mono text-xs"></td>
+                                            <td><input x-model="configData.aliases[alias]" class="table-input"></td>
+                                            <td>
+                                                <span class="status-pill" :class="modelHealthInfo(alias, model).ok === true ? 'status-ok' : modelHealthInfo(alias, model).ok === false ? 'status-bad' : 'status-warn'" x-text="modelHealthInfo(alias, model).label"></span>
+                                                <div class="mt-1 max-w-[260px] text-xs text-slate-500 dark:text-slate-400" x-text="modelHealthInfo(alias, model).detail"></div>
+                                            </td>
+                                            <td><button @click="deleteAlias(alias)" class="danger-button">删除</button></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h4 class="font-semibold">密钥池</h4>
+                            <button @click="openProviderWizard()" class="primary-button">新增 Provider</button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="data-table">
+                                <thead><tr><th>提供商</th><th>策略</th><th>密钥数</th><th></th></tr></thead>
+                                <tbody>
+                                    <template x-for="[name, kp] in Object.entries(configData.keypools || {})" :key="name">
+                                        <tr>
+                                            <td x-text="name"></td>
+                                            <td>
+                                                <select x-model="kp.strategy" class="table-input">
+                                                    <option value="round-robin">round-robin</option>
+                                                    <option value="least-used">least-used</option>
+                                                    <option value="random">random</option>
+                                                </select>
+                                            </td>
+                                            <td x-text="(kp.keys||[]).length"></td>
+                                            <td><button @click="editKeyPool(name)" class="link-button">编辑</button></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-header"><h4 class="font-semibold">降级配置</h4><button @click="configData.fallbacks.push({from:'',to:'',model_map:{}})" class="link-button">添加</button></div>
+                        <div class="overflow-x-auto">
+                            <table class="data-table">
+                                <thead><tr><th>From</th><th>To</th><th>Model Map</th><th></th></tr></thead>
+                                <tbody>
+                                    <template x-for="(fb, i) in configData.fallbacks || []" :key="i">
+                                        <tr>
+                                            <td><input x-model="fb.from" class="table-input"></td>
+                                            <td><input x-model="fb.to" class="table-input"></td>
+                                            <td class="max-w-[220px] truncate text-xs" x-text="JSON.stringify(fb.model_map||{})"></td>
+                                            <td><button @click="deleteFallback(i)" class="danger-button">删除</button></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div x-show="showProviderWizard" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4">
+                    <div class="w-full max-w-xl rounded bg-white p-5 shadow-xl dark:bg-slate-900">
+                        <div class="mb-4 flex items-center justify-between">
+                            <h4 class="font-semibold">新增 Provider</h4>
+                            <button @click="showProviderWizard=false" class="icon-button">×</button>
+                        </div>
+                        <div class="space-y-3">
+                            <label class="detail-field">
+                                <span>Provider 名称</span>
+                                <input x-model="providerWizard.name" class="table-input font-mono text-xs" placeholder="my-provider">
+                            </label>
+                            <label class="detail-field">
+                                <span>Base URL</span>
+                                <input x-model="providerWizard.baseUrl" class="table-input font-mono text-xs" placeholder="https://example.com/v1">
+                            </label>
+                            <div class="grid gap-3 md:grid-cols-2">
+                                <label class="detail-field">
+                                    <span>策略</span>
+                                    <select x-model="providerWizard.strategy" class="table-input">
+                                        <option value="round-robin">round-robin</option>
+                                        <option value="least-used">least-used</option>
+                                        <option value="random">random</option>
+                                    </select>
+                                </label>
+                                <label class="detail-field">
+                                    <span>限速</span>
+                                    <input x-model.number="providerWizard.rateLimit" type="number" min="1" class="table-input font-mono text-xs">
+                                </label>
+                            </div>
+                            <label class="detail-field">
+                                <span>第一把 Key</span>
+                                <input x-model="providerWizard.key" class="table-input font-mono text-xs" type="password" placeholder="可留空，稍后在 Provider 详情中添加">
+                            </label>
+                        </div>
+                        <div class="mt-5 flex justify-end gap-2">
+                            <button @click="showProviderWizard=false" class="secondary-button">取消</button>
+                            <button @click="saveProviderWizard()" class="primary-button">添加到配置</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div x-show="showModelWizard" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4">
+                    <div class="w-full max-w-xl rounded bg-white p-5 shadow-xl dark:bg-slate-900">
+                        <div class="mb-4 flex items-center justify-between">
+                            <h4 class="font-semibold">新增模型</h4>
+                            <button @click="showModelWizard=false" class="icon-button">×</button>
+                        </div>
+                        <div class="space-y-3">
+                            <label class="detail-field">
+                                <span>模型别名</span>
+                                <input x-model="modelWizard.alias" class="table-input font-mono text-xs" placeholder="gemini-pro">
+                            </label>
+                            <label class="detail-field">
+                                <span>实际模型名</span>
+                                <input x-model="modelWizard.model" class="table-input font-mono text-xs" placeholder="gemini-2.5-pro">
+                            </label>
+                            <label class="detail-field">
+                                <span>Provider</span>
+                                <select x-model="modelWizard.provider" class="table-input font-mono text-xs">
+                                    <template x-for="provider in providerNames()" :key="provider">
+                                        <option :value="provider" x-text="provider"></option>
+                                    </template>
+                                </select>
+                            </label>
+                            <label class="detail-field">
+                                <span>Base URL</span>
+                                <input class="table-input font-mono text-xs" :value="providerBaseUrl(modelWizard.provider)" readonly>
+                            </label>
+                        </div>
+                        <div class="mt-5 flex justify-end gap-2">
+                            <button @click="showModelWizard=false" class="secondary-button">取消</button>
+                            <button @click="saveModelWizard()" class="primary-button">添加到配置</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div x-show="editingKeyPool !== null" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4">
+                    <div class="w-full max-w-2xl rounded bg-white p-5 shadow-xl dark:bg-slate-900">
+                        <div class="mb-4 flex items-center justify-between">
+                            <h4 class="font-semibold">提供商详情 - <span x-text="editingKeyPool"></span></h4>
+                            <button @click="editingKeyPool=null; editKeyPoolBaseUrl=''; editKeyPoolSelectedModel=''; plainKeysVisible=false" class="icon-button">×</button>
+                        </div>
+                        <div class="mb-4 grid gap-3 md:grid-cols-2">
+                            <label class="detail-field">
+                                <span>Base URL</span>
+                                <input x-model="editKeyPoolBaseUrl" class="table-input font-mono text-xs" placeholder="https://example.com/v1">
+                            </label>
+                            <label class="detail-field">
+                                <span>模型</span>
+                                <select x-show="providerModels(editingKeyPool).length" x-model="editKeyPoolSelectedModel" class="table-input font-mono text-xs">
+                                    <template x-for="model in providerModels(editingKeyPool)" :key="model.source + '-' + model.value">
+                                        <option :value="model.value" x-text="model.label"></option>
+                                    </template>
+                                </select>
+                                <input x-show="!providerModels(editingKeyPool).length" class="table-input text-xs" value="暂无模型映射" readonly>
+                            </label>
+                        </div>
+                        <div class="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">密钥</div>
+                        <div class="max-h-[50vh] space-y-2 overflow-y-auto">
+                            <template x-for="(key, i) in editKeyPoolKeys" :key="i">
+                                <div class="flex gap-2">
+                                    <input x-model="editKeyPoolKeys[i]" class="table-input" :type="plainKeysVisible ? 'text' : 'password'" placeholder="****">
+                                    <button @click="deleteEditingKey(i)" class="danger-button">删除</button>
+                                </div>
+                            </template>
+                        </div>
+                        <div class="mt-4 flex justify-between gap-2">
+                            <button @click="editKeyPoolKeys.push('')" class="secondary-button">添加密钥</button>
+                            <button @click="revealKeyPoolKeys()" x-show="!plainKeysVisible" class="secondary-button">显示明文密钥</button>
+                            <button @click="saveKeyPool()" class="primary-button">保存</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 AI Gateway</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="auth-shell min-h-screen bg-slate-50 text-slate-950" x-data="authApp()">
+    <main class="min-h-screen px-4 py-8 sm:px-6 lg:px-8 flex items-center justify-center">
+        <section class="auth-frame w-full max-w-6xl overflow-hidden border border-slate-200 bg-white shadow-sm">
+            <div class="grid min-h-[680px] lg:grid-cols-[0.92fr_1.08fr]">
+                <aside class="auth-aside hidden lg:flex flex-col justify-between bg-slate-950 p-10 text-white">
+                    <div>
+                        <div class="mb-12 flex items-center gap-3">
+                            <div class="flex h-10 w-10 items-center justify-center rounded bg-blue-500 font-bold">AI</div>
+                            <div>
+                                <p class="text-sm text-slate-300">AI Gateway</p>
+                                <h1 class="text-xl font-semibold">统一网关管理台</h1>
+                            </div>
+                        </div>
+
+                        <div class="space-y-5">
+                            <p class="text-3xl font-semibold leading-tight">账号登录后，按租户查看真实用量与配置。</p>
+                            <p class="max-w-sm text-sm leading-6 text-slate-300">
+                                后台会逐步替代手动输入 API Key 的方式，支持邮箱或手机验证码注册，并通过会话保持登录状态。
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="grid gap-3">
+                        <div class="auth-metric">
+                            <span>密钥池</span>
+                            <strong>6 providers</strong>
+                        </div>
+                        <div class="auth-metric">
+                            <span>权限边界</span>
+                            <strong>租户隔离</strong>
+                        </div>
+                        <div class="auth-metric">
+                            <span>访问方式</span>
+                            <strong>登录会话</strong>
+                        </div>
+                    </div>
+                </aside>
+
+                <section class="flex items-center justify-center p-6 sm:p-10">
+                    <div class="w-full max-w-md">
+                        <div class="mb-8 lg:hidden">
+                            <div class="mb-4 flex h-10 w-10 items-center justify-center rounded bg-blue-600 font-bold text-white">AI</div>
+                            <h1 class="text-2xl font-semibold">AI Gateway</h1>
+                        </div>
+
+                        <div class="mb-7">
+                            <p class="text-sm font-medium text-blue-600">管理后台</p>
+                            <h2 class="mt-2 text-3xl font-semibold tracking-normal" x-text="mode === 'login' ? '登录 AI Gateway' : '注册账号'"></h2>
+                            <p class="mt-3 text-sm leading-6 text-slate-500" x-text="mode === 'login' ? '使用账号密码进入管理后台。' : '选择邮箱或手机号接收验证码，完成账号注册。'"></p>
+                        </div>
+
+                        <div class="mb-6 grid grid-cols-2 rounded border border-slate-200 bg-slate-100 p-1">
+                            <button type="button" class="auth-tab" :class="mode === 'login' ? 'auth-tab-active' : ''" @click="mode = 'login'">登录</button>
+                            <button type="button" class="auth-tab" :class="mode === 'register' ? 'auth-tab-active' : ''" @click="mode = 'register'">注册</button>
+                        </div>
+
+                        <form x-show="mode === 'login'" class="space-y-5" @submit.prevent="login()">
+                            <label class="block">
+                                <span class="auth-label">账号</span>
+                                <input class="auth-input" x-model="username" type="text" placeholder="邮箱、手机号或用户名" autocomplete="username">
+                            </label>
+                            <label class="block">
+                                <span class="auth-label">密码</span>
+                                <input class="auth-input" x-model="loginPassword" type="password" placeholder="请输入密码" autocomplete="current-password">
+                            </label>
+                            <button class="auth-primary" type="submit">登录</button>
+                        </form>
+
+                        <form x-show="mode === 'register'" class="space-y-5" @submit.prevent="register()">
+                            <div class="grid grid-cols-2 rounded border border-slate-200 bg-white p-1">
+                                <button type="button" class="auth-tab" :class="registerType === 'email' ? 'auth-tab-active' : ''" @click="registerType = 'email'">邮箱注册</button>
+                                <button type="button" class="auth-tab" :class="registerType === 'phone' ? 'auth-tab-active' : ''" @click="registerType = 'phone'">手机注册</button>
+                            </div>
+
+                            <label class="block" x-show="registerType === 'email'">
+                                <span class="auth-label">邮箱</span>
+                                <input class="auth-input" x-model="email" type="email" placeholder="name@example.com" autocomplete="email">
+                            </label>
+
+                            <label class="block" x-show="registerType === 'phone'">
+                                <span class="auth-label">手机号</span>
+                                <input class="auth-input" x-model="phone" type="tel" placeholder="请输入手机号" autocomplete="tel">
+                            </label>
+
+                            <label class="block">
+                                <span class="auth-label">密码</span>
+                                <input class="auth-input" x-model="password" type="password" placeholder="设置登录密码" autocomplete="new-password">
+                            </label>
+
+                            <label class="block">
+                                <span class="auth-label">验证码</span>
+                                <div class="flex gap-2">
+                                    <input class="auth-input" x-model="code" type="text" placeholder="6 位验证码" inputmode="numeric">
+                                    <button class="auth-secondary shrink-0" type="button" @click="sendVerificationCode()" :disabled="sendingCode" x-text="sendingCode ? '发送中' : '发送验证码'"></button>
+                                </div>
+                            </label>
+
+                            <p class="text-xs text-slate-500">验证码 5 分钟内有效。注册成功后将根据账号绑定租户数据。</p>
+                            <button class="auth-primary" type="submit">注册账号</button>
+                        </form>
+
+                        <div x-show="message" x-transition class="mt-5 rounded border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700" x-text="message"></div>
+                    </div>
+                </section>
+            </div>
+        </section>
+    </main>
+
+    <script src="/static/auth.js"></script>
+</body>
+</html>

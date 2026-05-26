@@ -1,0 +1,154 @@
+# AI Gateway example configuration.
+# Copy this file to config/gateway.yaml for local use, then provide real keys
+# through environment variables or local-only values. Do not commit gateway.yaml.
+
+server:
+  host: 0.0.0.0
+  port: 8000
+
+aliases:
+  volcengine-code: ark-code-latest
+  qwen3.6-plus: qwen/qwen3.6-plus
+  deepseek-chat: deepseek-chat
+  deepseek-r1: deepseek-reasoner
+  reasoning: deepseek-reasoner
+  openrouter-free: openrouter/free
+  qwen-plus: qwen-plus
+  psydo-gpt: gpt-5.4
+  fast: gpt-4o-mini
+  smart: claude-sonnet-4-6
+  gemini-flash: gemini-2.5-flash
+
+routes:
+  - pattern: gpt-5.4
+    provider: psydo
+  - pattern: gpt-*
+    provider: openai
+  - pattern: claude-*
+    provider: anthropic
+  - pattern: deepseek-*
+    provider: deepseek
+  - pattern: qwen/qwen3.6-plus
+    provider: cmecloud
+  - pattern: qwen-*
+    provider: qwen
+  - pattern: wenxin-*
+    provider: wenxin
+  - pattern: glm-*
+    provider: zhipu
+  - pattern: psydo-*
+    provider: psydo
+  - pattern: openrouter/*
+    provider: openrouter
+  - pattern: openrouter-*
+    provider: openrouter
+  - pattern: minimax-*
+    provider: cmecloud
+  - pattern: ep-*
+    provider: volcengine
+  - pattern: doubao-*
+    provider: volcengine
+  - pattern: ark-code-latest
+    provider: volcengine
+  - pattern: gemini-*
+    provider: gemini
+  - pattern: "*"
+    provider: openai
+
+provider_base_urls:
+  openai: https://api.openai.com/v1
+  anthropic: https://api.anthropic.com
+  deepseek: https://api.deepseek.com
+  qwen: https://dashscope.aliyuncs.com/compatible-mode
+  volcengine: https://ark.cn-beijing.volces.com/api/coding/v3
+  openrouter: https://openrouter.ai/api/v1
+  cmecloud: https://moma.cmecloud.cn/v1
+  psydo: https://api.psydo.top/v1
+  gemini: https://generativelanguage.googleapis.com/v1beta/openai
+
+keypools:
+  openai:
+    keys:
+      - ${OPENAI_API_KEY}
+    strategy: round-robin
+    rate_limit: 60
+  anthropic:
+    keys:
+      - ${ANTHROPIC_API_KEY}
+    strategy: least-used
+    rate_limit: 50
+  deepseek:
+    keys:
+      - ${DEEPSEEK_API_KEY}
+    strategy: random
+    rate_limit: 30
+  qwen:
+    keys:
+      - ${QWEN_API_KEY}
+    strategy: round-robin
+    rate_limit: 60
+  volcengine:
+    keys:
+      - ${VOLCENGINE_API_KEY}
+    strategy: round-robin
+    rate_limit: 60
+  openrouter:
+    keys:
+      - ${OPENROUTER_API_KEY}
+    strategy: round-robin
+    rate_limit: 60
+  cmecloud:
+    keys:
+      - value: ${CMECLOUD_API_KEY}
+        allowed_models:
+          - qwen/qwen3.6-plus
+          - minimax-m2.5
+    strategy: round-robin
+    rate_limit: 60
+  psydo:
+    keys:
+      - ${PSYDO_API_KEY}
+    strategy: round-robin
+    rate_limit: 60
+  gemini:
+    keys:
+      - ${GEMINI_API_KEY}
+    strategy: round-robin
+    rate_limit: 60
+
+fallbacks: []
+
+tenants:
+  - name: default
+    api_key: ${GATEWAY_DEFAULT_API_KEY}
+    rate_limit:
+      rpm: 100
+      tpm: 100000
+    quota:
+      daily_tokens: 1000000
+      monthly_tokens: 10000000
+
+pricing:
+  openai:
+    gpt-4o:
+      input: 2.5
+      output: 10
+  anthropic:
+    claude-sonnet-4-6:
+      input: 3
+      output: 15
+  deepseek:
+    deepseek-reasoner:
+      input: 0.55
+      output: 2.19
+  qwen: {}
+  volcengine: {}
+  openrouter: {}
+  cmecloud: {}
+  psydo: {}
+  gemini: {}
+
+logging:
+  access_log: data/access.log
+  error_log: data/error.log
+  retention_days: 10
