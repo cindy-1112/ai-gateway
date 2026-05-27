@@ -36,14 +36,14 @@ http://127.0.0.1:8000/admin/login
 默认管理员：
 
 ```text
-admin / <set ADMIN_PASSWORD>
+默认用户名为 `admin`。如果未设置 `ADMIN_PASSWORD`，首次启动会生成随机初始密码并输出到启动控制台。共享环境请务必在首次启动前设置 `ADMIN_PASSWORD`。
 ```
 
 生产或长期使用前，应通过环境变量修改默认账号密码：
 
 ```powershell
 $env:ADMIN_USERNAME = "admin@example.com"
-$env:ADMIN_PASSWORD = "<your-admin-password>"
+$env:ADMIN_PASSWORD = "change-this-password"
 python run.py
 ```
 
@@ -284,4 +284,3 @@ data/gateway.db
 5. 接入真实邮件/短信验证码。
 6. 引入 Alembic 管理数据库迁移。
 7. 增加模型实时连通性检测。
-

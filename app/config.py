@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
 import yaml
+
+from app.security.crypto import decrypt_secret
 
 
 @dataclass
@@ -20,8 +23,14 @@ class RouteRule:
 
 
 @dataclass
+class ProviderKeyConfig:
+    value: str
+    allowed_models: list[str] = field(default_factory=list)
+
+
+@dataclass
 class KeyPoolConfig:
-    keys: list[str] = field(default_factory=list)
+    keys: list[ProviderKeyConfig] = field(default_factory=list)
     strategy: str = "round-robin"
     rate_limit: int = 60
 
@@ -57,6 +66,9 @@ class TenantConfig:
 class ModelPricing:
     input: float
     output: float
+    cached_input: float = 0.0
+    context: str | None = None
+    currency: str = "CNY"
 
 
 @dataclass
@@ -79,13 +91,49 @@ class GatewayConfig:
     logging: LoggingConfig = field(default_factory=LoggingConfig)
 
 
+_ENV_PATTERN = re.compile(r"^\$\{([A-Za-z_][A-Za-z0-9_]*)(?::-(.*))?\}$")
+
+
+def _load_dotenv(start: Path) -> None:
+    for directory in [start, *start.parents]:
+        dotenv_path = directory / ".env"
+        if not dotenv_path.exists():
+            continue
+        for raw_line in dotenv_path.read_text(encoding="utf-8").splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            if key and key not in os.environ:
+                os.environ[key] = value
+        return
+
+
+def _resolve_env_value(value):
+    if isinstance(value, str):
+        match = _ENV_PATTERN.match(value.strip())
+        if not match:
+            return value
+        name, default = match.groups()
+        return os.environ.get(name, default if default is not None else value)
+    if isinstance(value, list):
+        return [_resolve_env_value(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _resolve_env_value(item) for key, item in value.items()}
+    return value
+
+
 def load_config(path: str) -> GatewayConfig:
     config_path = Path(path)
     if not config_path.exists():
         raise FileNotFoundError(f"Config file not found: {path}")
+    _load_dotenv(config_path.resolve().parent)
 
     with open(config_path) as f:
         raw = yaml.safe_load(f) or {}
+    raw = _resolve_env_value(raw)
 
     return _parse_config(raw)
 
@@ -105,9 +153,19 @@ def _parse_config(raw: dict) -> GatewayConfig:
     aliases = raw.get("aliases", {})
     provider_base_urls = raw.get("provider_base_urls", {})
 
+    def parse_provider_key(item) -> ProviderKeyConfig:
+        if isinstance(item, str):
+            return ProviderKeyConfig(value=decrypt_secret(item))
+        if isinstance(item, dict):
+            return ProviderKeyConfig(
+                value=decrypt_secret(str(item.get("value", ""))),
+                allowed_models=list(item.get("allowed_models", []) or []),
+            )
+        return ProviderKeyConfig(value=str(item))
+
     keypools = {
         name: KeyPoolConfig(
-            keys=kp.get("keys", []),
+            keys=[parse_provider_key(item) for item in kp.get("keys", [])],
             strategy=kp.get("strategy", "round-robin"),
             rate_limit=kp.get("rate_limit", 60),
         )
@@ -126,7 +184,7 @@ def _parse_config(raw: dict) -> GatewayConfig:
     tenants = [
         TenantConfig(
             name=t["name"],
-            api_key=t["api_key"],
+            api_key=decrypt_secret(t["api_key"]),
             rate_limit=RateLimitConfig(**t.get("rate_limit", {})),
             quota=QuotaConfig(**t.get("quota", {})),
         )
@@ -136,7 +194,14 @@ def _parse_config(raw: dict) -> GatewayConfig:
     pricing = {}
     for provider, models in raw.get("pricing", {}).items():
         pricing[provider] = {
-            model: ModelPricing(**prices) for model, prices in models.items()
+            model: ModelPricing(
+                input=float((prices or {}).get("input", 0)),
+                output=float((prices or {}).get("output", 0)),
+                cached_input=float((prices or {}).get("cached_input", 0) or 0),
+                context=(prices or {}).get("context"),
+                currency=str((prices or {}).get("currency", "CNY") or "CNY"),
+            )
+            for model, prices in models.items()
         }
 
     logging_raw = raw.get("logging", {})

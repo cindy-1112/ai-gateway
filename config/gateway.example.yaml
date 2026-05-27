@@ -133,19 +133,70 @@ pricing:
     gpt-4o:
       input: 2.5
       output: 10
+    gpt-5.4:
+      input: 18.0
+      output: 108.0
+      cached_input: 0.25
+      context: 1M
+      currency: CNY
   anthropic:
     claude-sonnet-4-6:
       input: 3
       output: 15
   deepseek:
     deepseek-reasoner:
-      input: 0.55
-      output: 2.19
-  qwen: {}
-  volcengine: {}
+      input: 9.6
+      output: 38.4
+      cached_input: 1.92
+      context: 64K
+      currency: CNY
+    deepseek-r1:
+      input: 9.6
+      output: 38.4
+      cached_input: 1.92
+      context: 64K
+      currency: CNY
+  qwen:
+    qwen-plus:
+      input: 0.8
+      output: 2.0
+      cached_input: 0.16
+      context: 128K
+      currency: CNY
+  volcengine:
+    ark-code-latest:
+      input: 3.2
+      output: 16.0
+      cached_input: 0.64
+      context: 256K
+      currency: CNY
+    deepseek-r1:
+      input: 9.6
+      output: 38.4
+      cached_input: 1.92
+      context: 64K
+      currency: CNY
+    deepseek-reasoner:
+      input: 9.6
+      output: 38.4
+      cached_input: 1.92
+      context: 64K
+      currency: CNY
   openrouter: {}
-  cmecloud: {}
-  psydo: {}
+  cmecloud:
+    qwen/qwen3.6-plus:
+      input: 0.8
+      output: 2.0
+      cached_input: 0.16
+      context: 128K
+      currency: CNY
+  psydo:
+    gpt-5.4:
+      input: 18.0
+      output: 108.0
+      cached_input: 0.25
+      context: 1M
+      currency: CNY
   gemini: {}
 
 logging:

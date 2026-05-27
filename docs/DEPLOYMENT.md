@@ -76,7 +76,7 @@ Use environment variables for deployment-specific values.
 
 ```powershell
 $env:ADMIN_USERNAME = "admin@example.com"
-$env:ADMIN_PASSWORD = "<your-admin-password>"
+$env:ADMIN_PASSWORD = "change-this-password"
 $env:GATEWAY_PORT = "8000"
 ```
 
@@ -137,11 +137,9 @@ ADMIN_USERNAME
 ADMIN_PASSWORD
 ```
 
-If these variables are not set, the default is:
+If `ADMIN_PASSWORD` is not set, the service generates a one-time initial password on first startup and prints it to the startup console. Set `ADMIN_PASSWORD` explicitly before first startup in shared environments.
 
-```text
-admin / <set ADMIN_PASSWORD>
-```
+The default username remains `admin` unless `ADMIN_USERNAME` is set.
 
 Change this before first production startup.
 

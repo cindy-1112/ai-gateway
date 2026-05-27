@@ -119,14 +119,14 @@ Default values:
 
 ```text
 username: admin
-password: <set ADMIN_PASSWORD>
+password: generated on first startup unless ADMIN_PASSWORD is set
 ```
 
 Override them before first startup:
 
 ```powershell
 $env:ADMIN_USERNAME = "admin@example.com"
-$env:ADMIN_PASSWORD = "<your-admin-password>"
+$env:ADMIN_PASSWORD = "change-this-password"
 python run.py
 ```
 
@@ -137,7 +137,7 @@ Change the default password immediately in any shared or production environment.
 | Variable | Purpose | Default |
 | --- | --- | --- |
 | `ADMIN_USERNAME` | Default admin username created on first startup | `admin` |
-| `ADMIN_PASSWORD` | Default admin password created on first startup | `<set ADMIN_PASSWORD>` |
+| `ADMIN_PASSWORD` | Initial admin password created on first startup | Randomly generated if unset |
 | `GATEWAY_PORT` | Overrides `server.port` from `config/gateway.yaml` | `8000` |
 | `TEST_DB_URL` | Overrides the database URL | `sqlite+aiosqlite:///data/gateway.db` |
 

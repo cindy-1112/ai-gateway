@@ -1,6 +1,3 @@
-import os
-TEST_ADMIN_PASSWORD = "test-admin" + "-credential"
-TEST_TENANT_KEY = "${GATEWAY_DEFAULT_API_KEY}"
 import pytest
 from httpx import ASGITransport, AsyncClient
 
@@ -10,9 +7,11 @@ from app.config import load_config
 
 @pytest.fixture
 async def client(tmp_path):
+    import os
     db_path = tmp_path / "test.db"
     os.environ["TEST_DB_URL"] = f"sqlite+aiosqlite:///{db_path}"
-    os.environ["ADMIN_PASSWORD"] = TEST_ADMIN_PASSWORD
+    os.environ["ADMIN_PASSWORD"] = "admin123456"
+    os.environ["GATEWAY_DEFAULT_API_KEY"] = "gw-default-key"
     config = load_config("config/gateway.example.yaml")
     app = create_app(config)
     # Manually run lifespan startup (httpx ASGITransport doesn't trigger ASGI lifespan)
@@ -23,7 +22,8 @@ async def client(tmp_path):
         yield c
     await lifespan_ctx.__aexit__(None, None, None)
     del os.environ["TEST_DB_URL"]
-    os.environ.pop("ADMIN_PASSWORD", None)
+    del os.environ["ADMIN_PASSWORD"]
+    del os.environ["GATEWAY_DEFAULT_API_KEY"]
 
 
 async def test_health_endpoint(client):
@@ -52,7 +52,7 @@ async def test_chat_completions_invalid_key(client):
 async def test_usage_endpoint(client):
     response = await client.get(
         "/v1/usage",
-        headers={"Authorization": "Bearer ${GATEWAY_DEFAULT_API_KEY}"},
+        headers={"Authorization": "Bearer gw-default-key"},
     )
     assert response.status_code == 200
     data = response.json()
@@ -63,7 +63,7 @@ async def test_usage_endpoint(client):
 async def test_keys_status_endpoint(client):
     response = await client.get(
         "/v1/keys/status",
-        headers={"Authorization": "Bearer ${GATEWAY_DEFAULT_API_KEY}"},
+        headers={"Authorization": "Bearer gw-default-key"},
     )
     assert response.status_code == 200
     data = response.json()
@@ -73,7 +73,7 @@ async def test_keys_status_endpoint(client):
 async def test_usage_summary_endpoint(client):
     response = await client.get(
         "/v1/usage/summary?period=today",
-        headers={"Authorization": "Bearer ${GATEWAY_DEFAULT_API_KEY}"},
+        headers={"Authorization": "Bearer gw-default-key"},
     )
     assert response.status_code == 200
     data = response.json()
@@ -90,7 +90,7 @@ async def test_usage_events_requires_auth(client):
 async def test_logs_endpoint(client):
     response = await client.get(
         "/v1/logs?limit=10",
-        headers={"Authorization": "Bearer ${GATEWAY_DEFAULT_API_KEY}"},
+        headers={"Authorization": "Bearer gw-default-key"},
     )
     assert response.status_code == 200
     data = response.json()
@@ -102,7 +102,7 @@ async def test_logs_endpoint(client):
 async def test_get_config_endpoint(client):
     response = await client.get(
         "/v1/config",
-        headers={"Authorization": "Bearer ${GATEWAY_DEFAULT_API_KEY}"},
+        headers={"Authorization": "Bearer gw-default-key"},
     )
     assert response.status_code == 200
     data = response.json()
@@ -115,7 +115,7 @@ async def test_get_config_endpoint(client):
 async def test_admin_can_reveal_plain_keypool_keys(client):
     await client.post(
         "/admin/api/auth/login",
-        json={"username": "admin", "password": TEST_ADMIN_PASSWORD},
+        json={"username": "admin", "password": "admin123456"},
     )
     response = await client.get("/v1/config/keypools/deepseek/keys")
     assert response.status_code == 200
@@ -151,7 +151,7 @@ async def test_regular_user_cannot_reveal_plain_keypool_keys(client):
 async def test_admin_can_list_admin_users(client):
     await client.post(
         "/admin/api/auth/login",
-        json={"username": "admin", "password": TEST_ADMIN_PASSWORD},
+        json={"username": "admin", "password": "admin123456"},
     )
     response = await client.get("/admin/api/users")
     assert response.status_code == 200
@@ -187,7 +187,7 @@ async def test_regular_user_cannot_list_admin_users(client):
 async def test_admin_can_create_update_delete_user(client):
     await client.post(
         "/admin/api/auth/login",
-        json={"username": "admin", "password": TEST_ADMIN_PASSWORD},
+        json={"username": "admin", "password": "admin123456"},
     )
     create_response = await client.post(
         "/admin/api/users",
@@ -229,7 +229,7 @@ async def test_admin_can_create_update_delete_user(client):
 async def test_admin_cannot_delete_self(client):
     await client.post(
         "/admin/api/auth/login",
-        json={"username": "admin", "password": TEST_ADMIN_PASSWORD},
+        json={"username": "admin", "password": "admin123456"},
     )
     me = await client.get("/admin/api/auth/me")
     user_id = me.json()["user"]["id"]
@@ -240,7 +240,7 @@ async def test_admin_cannot_delete_self(client):
 async def test_operator_module_permissions(client):
     await client.post(
         "/admin/api/auth/login",
-        json={"username": "admin", "password": TEST_ADMIN_PASSWORD},
+        json={"username": "admin", "password": "admin123456"},
     )
     create_response = await client.post(
         "/admin/api/users",
@@ -274,7 +274,7 @@ async def test_operator_module_permissions(client):
 async def test_custom_user_module_permissions_override_role(client):
     await client.post(
         "/admin/api/auth/login",
-        json={"username": "admin", "password": TEST_ADMIN_PASSWORD},
+        json={"username": "admin", "password": "admin123456"},
     )
     create_response = await client.post(
         "/admin/api/users",
@@ -333,7 +333,7 @@ async def test_put_config_endpoint(client, tmp_path):
         }
         response = await client.put(
             "/v1/config",
-            headers={"Authorization": "Bearer ${GATEWAY_DEFAULT_API_KEY}"},
+            headers={"Authorization": "Bearer gw-default-key"},
             json=new_config,
         )
         assert response.status_code == 200
@@ -481,7 +481,7 @@ async def test_register_rejects_duplicate_account(client):
 async def test_login_default_admin(client):
     response = await client.post(
         "/admin/api/auth/login",
-        json={"username": "admin", "password": TEST_ADMIN_PASSWORD},
+        json={"username": "admin", "password": "admin123456"},
     )
     assert response.status_code == 200
     data = response.json()
@@ -527,7 +527,7 @@ async def test_login_rejects_wrong_password(client):
 async def test_admin_session_allows_admin_page_and_management_api(client):
     login = await client.post(
         "/admin/api/auth/login",
-        json={"username": "admin", "password": TEST_ADMIN_PASSWORD},
+        json={"username": "admin", "password": "admin123456"},
     )
     assert login.status_code == 200
 
@@ -632,15 +632,7 @@ async def test_regular_user_usage_summary_is_tenant_scoped(client):
     assert "other" not in data["by_tenant"]
 
 
-async def test_regular_user_logs_are_tenant_scoped(client):
-    import json
-    from app.config import load_config
-
-    log_path = load_config("config/gateway.example.yaml").logging.access_log
-    with open(log_path, "w", encoding="utf-8") as f:
-        f.write(json.dumps({"request_id": "default-log", "tenant": "default"}) + "\n")
-        f.write(json.dumps({"request_id": "other-log", "tenant": "other"}) + "\n")
-
+async def test_regular_user_logs_are_user_scoped(client):
     target = "logs-user@example.com"
     code_response = await client.post(
         "/admin/api/auth/verification-code",
@@ -659,18 +651,60 @@ async def test_regular_user_logs_are_tenant_scoped(client):
         "/admin/api/auth/login",
         json={"username": target, "password": "password123"},
     )
+    me = await client.get("/admin/api/auth/me")
+    user_id = me.json()["user"]["id"]
+
+    from app.db.database import Database
+    from app.db.models import RequestLogRecord
+    import os
+
+    db = Database(os.environ["TEST_DB_URL"])
+    await db.init()
+    async with db.session() as session:
+        session.add(
+            RequestLogRecord(
+                request_id="user-log",
+                tenant="default",
+                user_id=user_id,
+                username=target,
+                user_api_key_prefix="ugk_live_test",
+                model_binding_id=1,
+                model="gpt-4o",
+                provider="openai",
+                api_key_suffix="xxx1",
+                status=200,
+                latency_ms=100,
+                stream=0,
+            )
+        )
+        session.add(
+            RequestLogRecord(
+                request_id="other-user-log",
+                tenant="default",
+                user_id=user_id + 100,
+                username="other@example.com",
+                model="gpt-4o",
+                provider="openai",
+                api_key_suffix="xxx2",
+                status=200,
+                latency_ms=100,
+                stream=0,
+            )
+        )
+        await session.commit()
+    await db.close()
 
     response = await client.get("/v1/logs")
 
     assert response.status_code == 200
     request_ids = [item["request_id"] for item in response.json()["items"]]
-    assert request_ids == ["default-log"]
+    assert request_ids == ["user-log"]
 
 
 async def test_admin_logout_revokes_session(client):
     await client.post(
         "/admin/api/auth/login",
-        json={"username": "admin", "password": TEST_ADMIN_PASSWORD},
+        json={"username": "admin", "password": "admin123456"},
     )
     logout = await client.post("/admin/api/auth/logout")
     me = await client.get("/admin/api/auth/me")
@@ -682,7 +716,7 @@ async def test_admin_logout_revokes_session(client):
 async def test_admin_page_has_content(client):
     await client.post(
         "/admin/api/auth/login",
-        json={"username": "admin", "password": TEST_ADMIN_PASSWORD},
+        json={"username": "admin", "password": "admin123456"},
     )
     response = await client.get("/admin/")
     assert response.status_code == 200
@@ -692,7 +726,7 @@ async def test_admin_page_has_content(client):
 async def test_logs_endpoint_structure(client):
     response = await client.get(
         "/v1/logs",
-        headers={"Authorization": "Bearer ${GATEWAY_DEFAULT_API_KEY}"},
+        headers={"Authorization": "Bearer gw-default-key"},
     )
     assert response.status_code == 200
     data = response.json()
@@ -703,7 +737,7 @@ async def test_logs_endpoint_structure(client):
 async def test_config_endpoint_structure(client):
     response = await client.get(
         "/v1/config",
-        headers={"Authorization": "Bearer ${GATEWAY_DEFAULT_API_KEY}"},
+        headers={"Authorization": "Bearer gw-default-key"},
     )
     assert response.status_code == 200
     data = response.json()

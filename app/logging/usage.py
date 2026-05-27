@@ -5,6 +5,7 @@ from datetime import datetime
 
 from app.db.database import Database
 from app.db.models import UsageRecord
+from app.time_utils import iso_beijing
 
 
 class UsageEventBroker:
@@ -49,16 +50,32 @@ class UsageLogger:
         completion_tokens: int,
         total_tokens: int,
         cost_usd: float,
+        uncached_input_tokens: int | None = None,
+        cached_input_tokens: int = 0,
+        cost_currency: str = "CNY",
+        user_id: int | None = None,
+        username: str | None = None,
+        api_key_prefix: str | None = None,
+        model_binding_id: int | None = None,
     ) -> dict:
         record = UsageRecord(
             request_id=request_id,
             tenant=tenant,
+            user_id=user_id,
+            username=username,
+            api_key_prefix=api_key_prefix,
+            model_binding_id=model_binding_id,
             model=model,
             provider=provider,
             prompt_tokens=prompt_tokens,
+            uncached_input_tokens=(
+                prompt_tokens if uncached_input_tokens is None else uncached_input_tokens
+            ),
+            cached_input_tokens=cached_input_tokens,
             completion_tokens=completion_tokens,
             total_tokens=total_tokens,
             cost_usd=cost_usd,
+            cost_currency=cost_currency,
         )
         async with self.db.session() as session:
             session.add(record)
@@ -67,17 +84,20 @@ class UsageLogger:
         event = {
             "request_id": request_id,
             "tenant": tenant,
+            "user_id": user_id,
+            "username": username,
+            "api_key_prefix": api_key_prefix,
+            "model_binding_id": model_binding_id,
             "model": model,
             "provider": provider,
             "prompt_tokens": prompt_tokens,
+            "uncached_input_tokens": record.uncached_input_tokens,
+            "cached_input_tokens": cached_input_tokens,
             "completion_tokens": completion_tokens,
             "total_tokens": total_tokens,
             "cost_usd": cost_usd,
-            "created_at": (
-                record.created_at.isoformat() + "Z"
-                if isinstance(record.created_at, datetime)
-                else None
-            ),
+            "cost_currency": cost_currency,
+            "created_at": iso_beijing(record.created_at) if isinstance(record.created_at, datetime) else None,
         }
         if self.broker is not None:
             await self.broker.publish(event)

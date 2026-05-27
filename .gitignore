@@ -5,6 +5,7 @@ __pycache__/
 .ruff_cache/
 .mypy_cache/
 data/
+config/gateway.yaml
 *.db
 *.sqlite
 *.sqlite3
@@ -12,4 +13,3 @@ data/
 .venv/
 venv/
 node_modules/
-config/gateway.yaml

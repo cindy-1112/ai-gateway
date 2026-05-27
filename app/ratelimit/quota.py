@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from app.db.database import Database
 from app.db.models import QuotaState
+from app.time_utils import beijing_now
 
 
 class QuotaManager:
@@ -33,8 +33,8 @@ class QuotaManager:
                 tenant=tenant,
                 daily_tokens_used=0,
                 monthly_tokens_used=0,
-                daily_reset_at=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
-                monthly_reset_at=datetime.now(timezone.utc).strftime("%Y-%m"),
+                daily_reset_at=beijing_now().strftime("%Y-%m-%d"),
+                monthly_reset_at=beijing_now().strftime("%Y-%m"),
             )
             async with self.db.session() as session:
                 session.add(state)
@@ -58,7 +58,7 @@ class QuotaManager:
         return True
 
     def _check_reset(self, state: QuotaState) -> None:
-        now = datetime.now(timezone.utc)
+        now = beijing_now()
         today = now.strftime("%Y-%m-%d")
         this_month = now.strftime("%Y-%m")
 
@@ -72,7 +72,7 @@ class QuotaManager:
     async def reset_daily(self, tenant: str) -> None:
         state = await self._ensure_state(tenant)
         state.daily_tokens_used = 0
-        state.daily_reset_at = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        state.daily_reset_at = beijing_now().strftime("%Y-%m-%d")
         await self._persist(state)
 
     async def get_usage(self, tenant: str) -> dict:

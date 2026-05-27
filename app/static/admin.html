@@ -10,35 +10,51 @@
     </script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/style.css?v=20260527-log-grid-align">
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-950 dark:bg-slate-950 dark:text-slate-100" x-data="gatewayApp()" x-init="init()">
-<div class="min-h-screen lg:grid lg:grid-cols-[240px_1fr]">
-    <aside class="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 lg:min-h-screen lg:border-b-0 lg:border-r">
-        <div class="flex h-16 items-center gap-3 px-5">
-            <div class="flex h-9 w-9 items-center justify-center rounded bg-blue-600 text-sm font-bold text-white">AI</div>
-            <div>
-                <h1 class="text-base font-semibold">AI Gateway</h1>
-                <p class="text-xs text-slate-500 dark:text-slate-400">管理后台</p>
+<div class="admin-shell min-h-screen lg:grid lg:grid-cols-[240px_1fr]">
+    <aside class="admin-sidebar border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 lg:min-h-screen lg:border-b-0 lg:border-r">
+        <div class="sidebar-brand">
+            <div class="sidebar-logo">AI</div>
+            <div class="min-w-0">
+                <h1>AI Gateway</h1>
+                <p>统一模型网关</p>
             </div>
         </div>
 
-        <nav class="flex gap-1 overflow-x-auto px-3 pb-3 lg:block lg:space-y-1 lg:overflow-visible lg:pb-0">
-            <button x-show="canAccessModule('keys')" @click="currentPage='keys'; loadKeys()" :class="currentPage==='keys' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-200' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'" class="nav-button">密钥池</button>
-            <button x-show="canAccessModule('usage')" @click="currentPage='usage'; loadUsage()" :class="currentPage==='usage' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-200' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'" class="nav-button">用量统计</button>
-            <button x-show="canAccessModule('logs')" @click="currentPage='logs'; loadLogs()" :class="currentPage==='logs' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-200' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'" class="nav-button">请求日志</button>
-            <button x-show="currentUser?.role === 'user'" @click="currentPage='models'; prototypeFeedback=''; loadAvailableModels()" :class="currentPage==='models' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-200' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'" class="nav-button">申请模型</button>
-            <button x-show="currentUser?.role === 'admin'" @click="currentPage='models'; prototypeFeedback=''; loadAvailableModels()" :class="currentPage==='models' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-200' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'" class="nav-button">模型申请</button>
-            <button x-show="canAccessModule('users')" @click="currentPage='users'; loadUsers()" :class="currentPage==='users' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-200' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'" class="nav-button">用户与权限</button>
-            <button x-show="canAccessModule('config')" @click="currentPage='config'; loadConfig()" :class="currentPage==='config' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-200' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'" class="nav-button">配置管理</button>
+        <nav class="sidebar-nav">
+            <div class="sidebar-nav-section">
+                <div class="sidebar-nav-title">运行监控</div>
+                <button x-show="canAccessModule('usage')" @click="currentPage='usage'; loadUsage()" :class="currentPage==='usage' ? 'nav-active' : ''" class="nav-button"><span class="nav-icon">U</span><span>用量统计</span></button>
+                <button x-show="canAccessModule('logs')" @click="currentPage='logs'; loadLogs()" :class="currentPage==='logs' ? 'nav-active' : ''" class="nav-button"><span class="nav-icon">L</span><span>请求日志</span></button>
+                <button x-show="canAccessModule('audit')" @click="currentPage='audit'; auditOffset=0; loadAuditLogs()" :class="currentPage==='audit' ? 'nav-active' : ''" class="nav-button"><span class="nav-icon">A</span><span>操作日志</span></button>
+            </div>
+            <div class="sidebar-nav-section">
+                <div class="sidebar-nav-title">模型服务</div>
+                <button x-show="canAccessModule('keys')" @click="currentPage='keys'; loadKeys()" :class="currentPage==='keys' ? 'nav-active' : ''" class="nav-button"><span class="nav-icon">K</span><span>密钥池</span></button>
+                <button x-show="canAccessModule('modelTest')" @click="currentPage='modelTest'; loadModelTestPrototype()" :class="currentPage==='modelTest' ? 'nav-active' : ''" class="nav-button"><span class="nav-icon">T</span><span>模型测试</span></button>
+                <button x-show="currentUser?.role === 'user'" @click="currentPage='models'; prototypeFeedback=''; loadAvailableModels()" :class="currentPage==='models' ? 'nav-active' : ''" class="nav-button"><span class="nav-icon">M</span><span>申请模型</span></button>
+                <button x-show="currentUser?.role === 'admin'" @click="currentPage='models'; prototypeFeedback=''; loadAvailableModels()" :class="currentPage==='models' ? 'nav-active' : ''" class="nav-button"><span class="nav-icon">M</span><span>模型申请</span></button>
+            </div>
+            <div class="sidebar-nav-section">
+                <div class="sidebar-nav-title">系统管理</div>
+                <button x-show="currentUser?.role === 'admin'" @click="currentPage='registration'; loadRegistrationPrototype()" :class="currentPage==='registration' ? 'nav-active' : ''" class="nav-button"><span class="nav-icon">R</span><span>注册审核</span></button>
+                <button x-show="canAccessModule('users')" @click="currentPage='users'; loadUsers()" :class="currentPage==='users' ? 'nav-active' : ''" class="nav-button"><span class="nav-icon">P</span><span>用户与权限</span></button>
+                <button x-show="canAccessModule('config')" @click="currentPage='config'; loadConfig()" :class="currentPage==='config' ? 'nav-active' : ''" class="nav-button"><span class="nav-icon">C</span><span>配置管理</span></button>
+            </div>
+            <div class="sidebar-user-card">
+                <span x-text="currentUser?.role === 'admin' ? '管理员' : currentUser?.role === 'operator' ? '运营人员' : '普通用户'"></span>
+                <strong x-text="currentUser?.username || '-'"></strong>
+            </div>
         </nav>
     </aside>
 
     <div class="min-w-0">
-        <header class="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 sm:px-6">
+        <header class="admin-header sticky top-0 z-20 flex h-16 items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 sm:px-6">
             <div>
                 <p class="text-xs text-slate-500 dark:text-slate-400" x-text="currentUser?.role === 'admin' ? '管理员' : currentUser?.role === 'operator' ? '运营人员' : '普通用户'"></p>
-                <h2 class="text-lg font-semibold" x-text="currentPage==='keys' ? '密钥池' : currentPage==='usage' ? '用量统计' : currentPage==='logs' ? '请求日志' : currentPage==='models' ? '模型申请' : currentPage==='users' ? '用户与权限' : '配置管理'"></h2>
+                <h2 class="text-lg font-semibold" x-text="currentPage==='keys' ? '密钥池' : currentPage==='usage' ? '用量统计' : currentPage==='logs' ? '请求日志' : currentPage==='audit' ? '操作日志' : currentPage==='modelTest' ? '模型测试' : currentPage==='models' ? '模型申请' : currentPage==='registration' ? '注册审核' : currentPage==='users' ? '用户与权限' : '配置管理'"></h2>
             </div>
             <div class="flex items-center gap-2">
                 <span class="hidden max-w-[240px] truncate text-sm text-slate-500 dark:text-slate-300 sm:inline" x-text="currentUser?.username || ''"></span>
@@ -47,7 +63,7 @@
             </div>
         </header>
 
-        <main class="mx-auto max-w-7xl p-4 sm:p-6">
+        <main class="admin-main mx-auto max-w-7xl p-4 sm:p-6">
             <section x-show="currentPage==='keys' && canAccessModule('keys')" class="space-y-5">
                 <div class="section-toolbar">
                     <div>
@@ -57,66 +73,107 @@
                     <button @click="loadKeys()" class="primary-button">刷新</button>
                 </div>
 
-                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    <template x-for="[name, pool] in Object.entries(keysData)" :key="name">
-                        <button @click="toggleProvider(name)" class="provider-card" :class="pool.available === 0 ? 'provider-card-red' : pool.available < pool.total ? 'provider-card-yellow' : 'provider-card-green'">
-                            <span class="text-sm font-semibold uppercase tracking-wide" x-text="name"></span>
-                            <span class="mt-3 block text-3xl font-semibold" x-text="`${pool.available}/${pool.total}`"></span>
-                            <span class="mt-1 block text-sm text-slate-500 dark:text-slate-400" x-text="pool.strategy || 'round-robin'"></span>
-                        </button>
-                    </template>
-                </div>
+                <div class="provider-workbench key-workbench">
+                    <aside class="panel provider-workbench-list">
+                        <div class="panel-header provider-workbench-list-head">
+                            <div>
+                                <h4 class="font-semibold">Provider</h4>
+                                <p class="section-subtitle" x-text="keyProviderNames().length + ' 个密钥池'"></p>
+                            </div>
+                        </div>
+                        <div class="provider-select-list">
+                            <template x-for="name in keyProviderNames()" :key="name">
+                                <button @click="toggleProvider(name)" class="provider-select-item" :class="selectedKeyProvider === name ? 'provider-select-active' : ''">
+                                    <div>
+                                        <strong x-text="name"></strong>
+                                        <span x-text="`${keysData[name]?.available || 0}/${keysData[name]?.total || 0} 可用`"></span>
+                                    </div>
+                                    <span class="provider-status-dot" :class="'provider-status-' + keyPoolStatus(keysData[name])"></span>
+                                </button>
+                            </template>
+                        </div>
+                    </aside>
 
-                <template x-for="[name, pool] in Object.entries(keysData)" :key="'detail-'+name">
-                    <div x-show="expandedProvider===name" class="panel">
-                        <div class="panel-header">
-                            <h4 class="font-semibold capitalize" x-text="name"></h4>
-                            <span class="text-sm text-slate-500" x-text="`策略：${pool.strategy || '-'}`"></span>
-                        </div>
-                        <div class="provider-detail-grid">
-                            <div>
-                                <span class="detail-label">Base URL</span>
-                                <div class="detail-value font-mono" x-text="providerBaseUrl(name) || '未配置'"></div>
-                            </div>
-                            <div>
-                                <span class="detail-label">模型</span>
-                                <div class="model-list" x-show="providerModels(name).length">
-                                    <template x-for="model in providerModels(name)" :key="model.source + '-' + model.value">
-                                        <span class="model-pill" x-text="model.label"></span>
-                                    </template>
+                    <section class="panel provider-detail-workspace" x-show="selectedKeyPool()">
+                        <div class="provider-workbench-hero">
+                            <div class="provider-identity">
+                                <span class="provider-monogram" x-text="(selectedKeyProvider || 'AI').substring(0, 2).toUpperCase()"></span>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <h4 x-text="selectedKeyProvider"></h4>
+                                        <span class="status-pill" :class="keyPoolStatusClass(selectedKeyPool())" x-text="keyPoolStatusLabel(selectedKeyPool())"></span>
+                                    </div>
+                                    <p>密钥运行状态与模型覆盖范围</p>
                                 </div>
-                                <div class="detail-value" x-show="!providerModels(name).length">暂无模型映射</div>
+                            </div>
+                            <div class="provider-workbench-actions">
+                                <button @click="loadKeys()" class="secondary-button">刷新状态</button>
                             </div>
                         </div>
-                        <div class="overflow-x-auto">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>后缀</th>
-                                        <th>状态</th>
-                                        <th>使用次数</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <template x-for="key in pool.keys || []" :key="key.suffix">
-                                        <tr>
-                                            <td class="font-mono" x-text="key.suffix"></td>
-                                            <td><span class="status-pill" :class="key.status==='active' ? 'status-ok' : key.status==='rate_limited' ? 'status-warn' : 'status-bad'" x-text="key.status"></span></td>
-                                            <td class="font-mono" x-text="key.use_count"></td>
-                                        </tr>
-                                    </template>
-                                </tbody>
-                            </table>
+
+                        <div class="provider-overview-metrics">
+                            <div><span>可用 Key</span><strong x-text="selectedKeyPool()?.available || 0"></strong></div>
+                            <div><span>总 Key</span><strong x-text="selectedKeyPool()?.total || 0"></strong></div>
+                            <div><span>策略</span><strong x-text="selectedKeyPool()?.strategy || '-'"></strong></div>
+                            <div><span>模型</span><strong x-text="providerModels(selectedKeyProvider).length"></strong></div>
                         </div>
-                    </div>
-                </template>
+
+                        <div class="provider-detail-section">
+                            <div class="provider-detail-section-head">
+                                <h5>连接地址</h5>
+                            </div>
+                            <div class="detail-value font-mono" x-text="providerBaseUrl(selectedKeyProvider) || '未配置'"></div>
+                        </div>
+
+                        <div class="provider-detail-section">
+                            <div class="provider-detail-section-head">
+                                <h5>关联模型</h5>
+                                <span class="detail-caption" x-text="providerModels(selectedKeyProvider).length + ' 项'"></span>
+                            </div>
+                            <div class="model-list" x-show="providerModels(selectedKeyProvider).length">
+                                <template x-for="model in providerModels(selectedKeyProvider)" :key="model.source + '-' + model.value">
+                                    <span class="model-pill" x-text="model.label"></span>
+                                </template>
+                            </div>
+                            <div class="detail-empty" x-show="!providerModels(selectedKeyProvider).length">暂无模型映射</div>
+                        </div>
+
+                        <div class="provider-detail-section">
+                            <div class="provider-detail-section-head">
+                                <h5>Key 状态</h5>
+                                <span class="detail-caption" x-text="(selectedKeyPool()?.keys || []).length + ' 个'"></span>
+                            </div>
+                            <div class="overflow-x-auto" x-show="(selectedKeyPool()?.keys || []).length">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>后缀</th>
+                                            <th>状态</th>
+                                            <th>使用次数</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <template x-for="key in selectedKeyPool()?.keys || []" :key="key.suffix">
+                                            <tr>
+                                                <td class="font-mono" x-text="key.suffix"></td>
+                                                <td><span class="status-pill" :class="key.status==='active' ? 'status-ok' : key.status==='rate_limited' ? 'status-warn' : 'status-bad'" x-text="key.status"></span></td>
+                                                <td class="font-mono" x-text="key.use_count"></td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="detail-empty" x-show="!(selectedKeyPool()?.keys || []).length">暂无 Key</div>
+                        </div>
+                    </section>
+                </div>
             </section>
 
-            <section x-show="currentPage==='usage'" class="space-y-5">
+            <section x-show="currentPage==='usage'" class="space-y-5 usage-page">
                 <div class="section-toolbar">
                     <div>
                         <h3 class="section-title">用量统计</h3>
-                        <p class="section-subtitle">Token、成本和请求量汇总。</p>
+                        <p class="section-subtitle">按周期查看 Token、成本、模型和用户用量。</p>
                     </div>
                     <div class="segmented">
                         <template x-for="p in ['today','week','month']" :key="p">
@@ -125,45 +182,120 @@
                     </div>
                 </div>
 
-                <div class="grid gap-4 md:grid-cols-3">
-                    <div class="metric-card">
+                <div class="usage-metric-grid">
+                    <div class="metric-card usage-metric-card usage-metric-tokens">
                         <span>总 Token</span>
                         <strong x-text="usageData.total_tokens?.toLocaleString() || '0'"></strong>
+                        <em>输入与输出合计</em>
                     </div>
-                    <div class="metric-card">
-                        <span>总成本 USD</span>
-                        <strong x-text="'$' + (usageData.total_cost_usd || 0).toFixed(6)"></strong>
+                    <div class="metric-card usage-metric-card usage-metric-cost">
+                        <span>总成本 RMB</span>
+                        <strong x-text="'\u00a5' + (usageData.total_cost_usd || 0).toFixed(6)"></strong>
+                        <em>按模型定价估算</em>
                     </div>
-                    <div class="metric-card">
+                    <div class="metric-card usage-metric-card usage-metric-requests">
                         <span>请求数</span>
                         <strong x-text="Object.values(usageData.by_model||{}).reduce((s,m)=>s+m.requests,0).toLocaleString()"></strong>
+                        <em>当前周期内调用</em>
                     </div>
                 </div>
 
-                <div class="panel p-4">
-                    <canvas id="usageChart" height="200"></canvas>
+                <div class="panel usage-chart-panel">
+                    <div class="panel-header">
+                        <div>
+                            <h4 class="font-semibold">模型用量趋势</h4>
+                            <p class="section-subtitle">按模型汇总 Token 与成本。</p>
+                        </div>
+                    </div>
+                    <div class="usage-chart-frame">
+                        <canvas id="usageChart" height="220"></canvas>
+                    </div>
                 </div>
 
-                <div class="panel">
-                    <div class="panel-header"><h4 class="font-semibold">租户分布</h4></div>
+                <div class="usage-distribution-grid">
+                    <div class="panel usage-table-panel">
+                        <div class="panel-header">
+                            <h4 class="font-semibold">模型分布</h4>
+                            <span class="usage-count-pill" x-text="Object.keys(usageData.by_model||{}).length + ' 个模型'"></span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="data-table">
+                                <thead><tr><th>模型</th><th>请求数</th><th>Token</th><th>成本</th></tr></thead>
+                                <tbody>
+                                    <template x-for="[model, data] in Object.entries(usageData.by_model||{})" :key="model">
+                                        <tr>
+                                            <td>
+                                                <div class="font-semibold" x-text="model"></div>
+                                                <div class="text-xs text-slate-500">模型维度汇总</div>
+                                            </td>
+                                            <td class="font-mono" x-text="data.requests?.toLocaleString()"></td>
+                                            <td class="font-mono" x-text="data.tokens?.toLocaleString()"></td>
+                                            <td class="font-mono" x-text="'\u00a5' + (data.cost||0).toFixed(6)"></td>
+                                        </tr>
+                                    </template>
+                                    <tr x-show="Object.keys(usageData.by_model||{}).length === 0">
+                                        <td colspan="4" class="text-center text-slate-500">暂无模型用量</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="panel usage-table-panel">
+                        <div class="panel-header">
+                            <h4 class="font-semibold">租户分布</h4>
+                            <span class="usage-count-pill" x-text="Object.keys(usageData.by_tenant||{}).length + ' 个租户'"></span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="data-table">
+                                <thead><tr><th>租户</th><th>Token</th><th>成本</th></tr></thead>
+                                <tbody>
+                                    <template x-for="[name, data] in Object.entries(usageData.by_tenant||{})" :key="name">
+                                        <tr>
+                                            <td x-text="name"></td>
+                                            <td class="font-mono" x-text="data.tokens?.toLocaleString()"></td>
+                                            <td class="font-mono" x-text="'\u00a5' + (data.cost||0).toFixed(6)"></td>
+                                        </tr>
+                                    </template>
+                                    <tr x-show="Object.keys(usageData.by_tenant||{}).length === 0">
+                                        <td colspan="3" class="text-center text-slate-500">暂无租户用量</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div x-show="currentUser?.role !== 'user'" class="panel usage-table-panel">
+                    <div class="panel-header">
+                        <h4 class="font-semibold">用户分布</h4>
+                        <span class="usage-count-pill" x-text="Object.keys(usageData.by_user||{}).length + ' 个用户'"></span>
+                    </div>
                     <div class="overflow-x-auto">
                         <table class="data-table">
-                            <thead><tr><th>租户</th><th>Token</th><th>成本</th></tr></thead>
+                            <thead><tr><th>用户</th><th>请求数</th><th>Token</th><th>成本</th></tr></thead>
                             <tbody>
-                                <template x-for="[name, data] in Object.entries(usageData.by_tenant||{})" :key="name">
+                                <template x-for="[id, data] in Object.entries(usageData.by_user||{})" :key="id">
                                     <tr>
-                                        <td x-text="name"></td>
+                                        <td>
+                                            <div x-text="data.username"></div>
+                                            <div class="font-mono text-xs text-slate-500" x-text="'#' + id"></div>
+                                        </td>
+                                        <td class="font-mono" x-text="data.requests?.toLocaleString()"></td>
                                         <td class="font-mono" x-text="data.tokens?.toLocaleString()"></td>
-                                        <td class="font-mono" x-text="'$' + (data.cost||0).toFixed(6)"></td>
+                                        <td class="font-mono" x-text="'\u00a5' + (data.cost||0).toFixed(6)"></td>
                                     </tr>
                                 </template>
+                                <tr x-show="Object.keys(usageData.by_user||{}).length === 0">
+                                    <td colspan="4" class="text-center text-slate-500">暂无用户级用量</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
             </section>
 
-            <section x-show="currentPage==='logs'" class="space-y-5">
+            <section x-show="currentPage==='logs'" class="space-y-5 log-page">
                 <div class="section-toolbar">
                     <div>
                         <h3 class="section-title">请求日志</h3>
@@ -172,102 +304,231 @@
                     <button @click="logsOffset=0; loadLogs()" class="primary-button">刷新</button>
                 </div>
 
-                <div class="panel overflow-hidden">
+                <div class="panel log-filter-panel log-workbench-panel">
+                    <div class="log-filter-grid">
+                        <label>
+                            <span>状态码</span>
+                            <select x-model="logFilters.status" class="form-input">
+                                <option value="">全部</option>
+                                <option value="200">200 成功</option>
+                                <option value="400">400 请求错误</option>
+                                <option value="401">401 未认证</option>
+                                <option value="403">403 无权限</option>
+                                <option value="429">429 限流</option>
+                                <option value="500">500 服务错误</option>
+                            </select>
+                        </label>
+                        <label>
+                            <span>Provider</span>
+                            <input x-model.trim="logFilters.provider" class="form-input" placeholder="volcengine">
+                        </label>
+                        <label>
+                            <span>模型</span>
+                            <input x-model.trim="logFilters.model" class="form-input" placeholder="ark-code-latest">
+                        </label>
+                        <label x-show="currentUser?.role !== 'user'">
+                            <span>用户</span>
+                            <input x-model.trim="logFilters.username" class="form-input" placeholder="用户名 / 手机 / 邮箱">
+                        </label>
+                        <label>
+                            <span>开始时间</span>
+                            <input x-model="logFilters.start" type="datetime-local" class="form-input">
+                        </label>
+                        <label>
+                            <span>结束时间</span>
+                            <input x-model="logFilters.end" type="datetime-local" class="form-input">
+                        </label>
+                    </div>
+                    <div class="log-filter-actions">
+                        <button @click="applyLogFilters()" class="primary-button">查询</button>
+                        <button @click="resetLogFilters()" class="secondary-button">重置</button>
+                        <span class="log-count-pill" x-text="`共 ${logsData.total || 0} 条`"></span>
+                    </div>
+                </div>
+
+                <div class="panel overflow-hidden log-table-panel">
                     <div class="overflow-x-auto">
                         <table class="data-table">
-                            <thead><tr><th>时间</th><th>租户</th><th>模型</th><th>状态</th><th>延迟</th><th>提供商</th></tr></thead>
+                            <thead>
+                                <tr>
+                                    <th colspan="7" class="log-grid-header">
+                                        <div class="log-summary-grid">
+                                            <div>时间</div>
+                                            <div>用户</div>
+                                            <div>模型</div>
+                                            <div>Provider</div>
+                                            <div>状态码</div>
+                                            <div>延迟</div>
+                                            <div>Token</div>
+                                        </div>
+                                    </th>
+                                </tr>
+                            </thead>
                             <tbody>
-                                <template x-for="log in logsData.items || []" :key="log.request_id">
-                                    <tr @click="expandedLog = expandedLog===log.request_id ? null : log.request_id" class="cursor-pointer">
-                                        <td class="font-mono text-xs" x-text="formatLogTime(log.timestamp)"></td>
-                                        <td x-text="log.tenant || '-'"></td>
-                                        <td class="font-mono text-xs" x-text="log.model || '-'"></td>
-                                        <td><span class="status-pill" :class="log.status===200 ? 'status-ok' : log.status===429 ? 'status-warn' : 'status-bad'" x-text="log.status || '-'"></span></td>
-                                        <td class="font-mono" x-text="log.latency_ms ? `${log.latency_ms}ms` : '-'"></td>
-                                        <td x-text="log.provider || '-'"></td>
+                                <template x-for="log in logsData.items || []" :key="log.request_id || log.timestamp">
+                                    <tr class="log-row" :class="expandedLog === logIdentity(log) ? 'log-row-active' : ''">
+                                        <td colspan="7">
+                                            <div @click="toggleLogDetail(log)" class="log-summary-grid">
+                                                <div><span>时间</span><strong x-text="formatLogTime(log.timestamp)"></strong></div>
+                                                <div><span>用户</span><strong x-text="log.username || log.tenant || '-'"></strong></div>
+                                                <div><span>模型</span><strong x-text="log.model || '-'"></strong></div>
+                                                <div><span>Provider</span><strong><span class="model-pill" x-text="log.provider || '-'"></span></strong></div>
+                                                <div><span>状态码</span><strong><span class="status-pill" :class="Number(log.status) < 400 ? 'status-ok' : 'status-bad'" x-text="log.status || '-'"></span></strong></div>
+                                                <div><span>延迟</span><strong x-text="log.latency_ms ? `${log.latency_ms}ms` : '-'"></strong></div>
+                                                <div><span>Token</span><strong x-text="log.total_tokens || '-'"></strong></div>
+                                            </div>
+                                            <div x-show="expandedLog === logIdentity(log)" class="log-detail-row">
+                                                <div class="log-detail-panel">
+                                                    <div><span>请求 ID</span><strong x-text="log.request_id || '-'"></strong></div>
+                                                    <div><span>租户</span><strong x-text="log.tenant || '-'"></strong></div>
+                                                    <div><span>用户 ID</span><strong x-text="log.user_id || '-'"></strong></div>
+                                                    <div><span>用户 Key</span><strong x-text="log.user_api_key_prefix ? (log.user_api_key_prefix + '...') : '-'"></strong></div>
+                                                    <div><span>上游 Key</span><strong x-text="log.api_key_suffix ? ('****' + log.api_key_suffix) : '-'"></strong></div>
+                                                    <div><span>绑定 ID</span><strong x-text="log.model_binding_id || '-'"></strong></div>
+                                                    <div><span>输入 Token</span><strong x-text="log.prompt_tokens || 0"></strong></div>
+                                                    <div><span>输出 Token</span><strong x-text="log.completion_tokens || 0"></strong></div>
+                                                    <div><span>流式请求</span><strong x-text="log.stream ? '是' : '否'"></strong></div>
+                                                </div>
+                                            </div>
+                                        </td>
                                     </tr>
                                 </template>
+                                <tr x-show="(logsData.items || []).length === 0"><td colspan="7" class="text-center text-slate-500">暂无请求日志</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
-
-                <div class="text-center">
-                    <button @click="logsOffset += 50; loadLogs()" class="secondary-button">加载更多</button>
-                </div>
             </section>
 
-            <section x-show="currentPage==='models' && canAccessModule('models') && currentUser?.role === 'user'" class="space-y-5">
+            <section x-show="currentPage==='audit' && canAccessModule('audit')" class="space-y-5 log-page">
                 <div class="section-toolbar">
                     <div>
-                        <h3 class="section-title">申请模型</h3>
-                        <p class="section-subtitle">选择需要使用的模型，管理员审批后将成为你的可用模型。</p>
+                        <h3 class="section-title">&#25805;&#20316;&#26085;&#24535;</h3>
+                        <p class="section-subtitle">&#35760;&#24405;&#31649;&#29702;&#21592;&#21644;&#29992;&#25143;&#22312;&#21518;&#21488;&#30340;&#20851;&#38190;&#25805;&#20316;&#65292;&#20415;&#20110;&#36861;&#36394;&#37197;&#32622;&#21644;&#26435;&#38480;&#21464;&#26356;&#12290;</p>
                     </div>
-                    <span class="status-pill" :class="pendingPrototypeRequest() ? 'status-warn' : prototypeBinding()?.status === 'active' ? 'status-ok' : prototypeBinding()?.status === 'stopped' ? 'status-bad' : ''"
-                          x-text="pendingPrototypeRequest() ? '审批中' : prototypeBinding()?.status === 'active' ? '已绑定' : prototypeBinding()?.status === 'stopped' ? '已停止' : '未绑定'"></span>
-                </div>
-
-                <div x-show="prototypeFeedback" x-transition class="rounded border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-200" x-text="prototypeFeedback"></div>
-
-                <div class="panel model-binding-summary">
-                    <div>
-                        <span class="detail-label">当前绑定模型</span>
-                        <template x-if="prototypeBinding()">
-                            <div>
-                                <div class="text-lg font-semibold" x-text="prototypeBinding().alias"></div>
-                                <div class="mt-1 font-mono text-sm text-slate-500 dark:text-slate-400" x-text="`${prototypeBinding().model} / ${prototypeBinding().provider}`"></div>
-                            </div>
-                        </template>
-                        <p x-show="prototypeBinding()?.status === 'stopped'" class="text-sm text-red-600 dark:text-red-300">管理员已停止使用此模型，恢复后才可继续使用。</p>
-                        <p x-show="!prototypeBinding()" class="text-sm text-slate-500 dark:text-slate-400">暂无已审批通过的模型，请从下方发起申请。</p>
-                    </div>
-                    <div x-show="latestPrototypeRequest()" class="model-request-latest">
-                        <span class="detail-label">最近一次申请</span>
-                        <div class="flex items-center gap-2">
-                            <span class="font-semibold" x-text="latestPrototypeRequest()?.alias"></span>
-                            <span class="status-pill" :class="prototypeRequestStatusClass(latestPrototypeRequest()?.status)" x-text="prototypeRequestStatusLabel(latestPrototypeRequest()?.status)"></span>
-                        </div>
-                        <div class="mt-2 text-xs text-slate-500" x-text="formatPrototypeTime(latestPrototypeRequest()?.created_at)"></div>
+                    <div class="flex items-center gap-2">
+                        <span class="log-count-pill" x-text="'\u5171 ' + (auditData.total || 0) + ' \u6761'"></span>
+                        <button @click="auditOffset=0; loadAuditLogs()" class="primary-button">&#21047;&#26032;</button>
                     </div>
                 </div>
 
-                <div>
-                    <h4 class="mb-3 font-semibold">可申请模型</h4>
-                    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                        <template x-for="model in prototypeModels" :key="model.alias">
-                            <article class="panel model-application-card">
-                                <div class="model-card-topline">
-                                    <div class="model-card-icon" x-text="model.provider?.substring(0, 2).toUpperCase() || 'AI'"></div>
-                                    <div class="min-w-0 flex-1">
-                                        <div class="flex flex-wrap items-center gap-2">
-                                            <h5 class="model-card-title" x-text="model.alias"></h5>
-                                            <span class="status-pill" :class="model.status === '可用' ? 'status-ok' : 'status-bad'" x-text="model.status"></span>
-                                        </div>
-                                        <p class="model-card-model" x-text="model.model"></p>
-                                    </div>
-                                </div>
-
-                                <div class="model-card-meta">
-                                    <div>
-                                        <span>Provider</span>
-                                        <strong x-text="model.provider"></strong>
-                                    </div>
-                                    <div>
-                                        <span>申请方式</span>
-                                        <strong x-text="prototypeBinding() ? (prototypeBinding().status === 'stopped' ? '重新申请' : '更换审批') : '首次审批'"></strong>
-                                    </div>
-                                </div>
-
-                                <p class="model-card-description" x-text="model.description"></p>
-                                <button @click="submitPrototypeRequest(model)" class="model-card-action primary-button"
-                                        :disabled="!canSubmitPrototypeRequest(model)"
-                                        :class="!canSubmitPrototypeRequest(model) ? 'opacity-45 cursor-not-allowed' : ''"
-                                        x-text="prototypeBinding()?.alias === model.alias ? (prototypeBinding()?.status === 'stopped' ? '已停止使用' : '当前已绑定') : pendingPrototypeRequest() ? '已有申请待审批' : prototypeBinding() ? '申请更换' : '申请使用'"></button>
-                            </article>
-                        </template>
+                <div class="panel overflow-hidden audit-table-panel">
+                    <div class="overflow-x-auto">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>&#26102;&#38388;</th>
+                                    <th>&#25805;&#20316;&#20154;</th>
+                                    <th>&#25805;&#20316;</th>
+                                    <th>&#23545;&#35937;</th>
+                                    <th>&#29366;&#24577;</th>
+                                    <th>&#35814;&#24773;</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="log in auditData.items || []" :key="log.id">
+                                    <tr class="audit-row" :class="expandedAuditLog === log.id ? 'log-row-active' : ''">
+                                        <td colspan="6">
+                                            <div @click="toggleAuditDetail(log)" class="audit-summary-grid">
+                                                <div><span>时间</span><strong x-text="formatLogTime(log.created_at)"></strong></div>
+                                                <div><span>操作人</span><strong x-text="log.actor_name || '-'"></strong><small x-text="log.actor_role || '-'"></small></div>
+                                                <div><span>操作</span><strong><span class="model-pill" x-text="auditActionLabel(log.action)"></span></strong></div>
+                                                <div><span>对象</span><strong x-text="log.target_type || '-'"></strong><small x-text="log.target_name || log.target_id || '-'"></small></div>
+                                                <div><span>状态</span><strong><span class="status-pill" :class="log.status === 'success' ? 'status-ok' : 'status-bad'" x-text="log.status === 'success' ? '\u6210\u529f' : log.status"></span></strong></div>
+                                                <div><span>详情</span><strong class="audit-summary-detail" x-text="log.detail || '-'"></strong></div>
+                                            </div>
+                                            <div x-show="expandedAuditLog === log.id" class="log-detail-row">
+                                                <div class="log-detail-panel audit-detail-panel">
+                                                    <div><span>日志 ID</span><strong x-text="log.id || '-'"></strong></div>
+                                                    <div><span>操作人 ID</span><strong x-text="log.actor_id || '-'"></strong></div>
+                                                    <div><span>操作代码</span><strong x-text="log.action || '-'"></strong></div>
+                                                    <div><span>对象类型</span><strong x-text="log.target_type || '-'"></strong></div>
+                                                    <div><span>对象 ID</span><strong x-text="log.target_id || '-'"></strong></div>
+                                                    <div><span>对象名称</span><strong x-text="log.target_name || '-'"></strong></div>
+                                                    <div class="audit-detail-full"><span>操作详情</span><strong x-text="log.detail || '-'"></strong></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </template>
+                                <tr x-show="(auditData.items || []).length === 0">
+                                    <td colspan="6" class="text-center text-slate-500">&#26242;&#26080;&#25805;&#20316;&#26085;&#24535;</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div x-show="(auditData.items || []).length < (auditData.total || 0)" class="border-t border-slate-200 p-3 text-center dark:border-slate-800">
+                        <button @click="auditOffset += 100; loadAuditLogs()" class="secondary-button">&#21152;&#36733;&#26356;&#22810;</button>
                     </div>
                 </div>
             </section>
+
+            <section x-show="currentPage==='registration' && currentUser?.role === 'admin'" class="space-y-5 registration-page">
+                <div class="section-toolbar">
+                    <div>
+                        <h3 class="section-title">注册审核</h3>
+                        <p class="section-subtitle">审核用户注册申请，生成一次性注册码后线下发放。</p>
+                    </div>
+                    <button @click="loadRegistrationPrototype()" class="secondary-button">刷新</button>
+                </div>
+
+                <div class="registration-summary-grid">
+                    <div><span>待审核</span><strong x-text="registrationRequests.filter(item => item.status === 'pending').length"></strong></div>
+                    <div><span>已通过</span><strong x-text="registrationRequests.filter(item => item.status === 'approved').length"></strong></div>
+                    <div><span>已注册</span><strong x-text="registrationRequests.filter(item => item.status === 'registered').length"></strong></div>
+                    <div><span>已拒绝</span><strong x-text="registrationRequests.filter(item => item.status === 'rejected').length"></strong></div>
+                </div>
+
+                <div x-show="registrationFeedback" x-transition class="rounded border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-200" x-text="registrationFeedback"></div>
+
+                <div class="panel registration-panel">
+                    <div class="panel-header">
+                        <div>
+                            <h4 class="font-semibold">申请列表</h4>
+                            <p class="section-subtitle">申请数据已保存到系统数据库，管理员通过后线下发放注册码。</p>
+                        </div>
+                    </div>
+                    <div class="registration-card-list">
+                        <template x-for="request in registrationRequests" :key="request.id">
+                            <article class="registration-card">
+                                <div class="registration-card-main">
+                                    <div class="registration-avatar" x-text="request.channel === 'email' ? 'EM' : 'PH'"></div>
+                                    <div>
+                                        <div class="registration-card-title">
+                                            <strong x-text="request.target"></strong>
+                                            <span class="status-pill" :class="registrationStatusClass(request.status)" x-text="registrationStatusLabel(request.status)"></span>
+                                        </div>
+                                        <p x-text="request.reason || '未填写申请说明'"></p>
+                                        <div class="registration-meta">
+                                            <span x-text="request.channel === 'email' ? '邮箱申请' : '手机申请'"></span>
+                                            <span x-text="formatPrototypeTime(request.created_at)"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="registration-code-box">
+                                    <span>一次性注册码</span>
+                                    <strong x-text="request.invite_code || '待生成'"></strong>
+                                    <small x-show="request.reviewed_at" x-text="'审核时间：' + formatPrototypeTime(request.reviewed_at)"></small>
+                                </div>
+                                <div class="registration-actions">
+                                    <button x-show="request.status === 'pending'" @click="approveRegistrationRequest(request.id)" class="primary-button">通过并生成注册码</button>
+                                    <button x-show="request.status === 'pending'" @click="rejectRegistrationRequest(request.id)" class="danger-button">拒绝</button>
+                                    <button x-show="request.invite_code" @click="copyRegistrationCode(request)" class="secondary-button">复制注册码</button>
+                                    <button x-show="request.status === 'approved'" @click="resetRegistrationCode(request.id)" class="link-button">重新生成</button>
+                                </div>
+                            </article>
+                        </template>
+                        <div x-show="registrationRequests.length === 0" class="detail-empty">暂无注册申请。可在登录页“注册账号 -> 申请注册”提交一条申请。</div>
+                    </div>
+                </div>
+            </section>
+
+            <section x-show="currentPage==='modelTest' && canAccessModule('modelTest')" class="space-y-5">
+                <div class="section-toolbar"><div><h3 class="section-title">&#27169;&#22411;&#27979;&#35797;</h3><p class="section-subtitle" x-text="modelTestMode === 'personal' ? '\u6d4b\u8bd5\u5df2\u7ed1\u5b9a\u6a21\u578b\u548c\u7528\u6237\u7ea7 API Key \u662f\u5426\u53ef\u7528\u3002' : '\u6d4b\u8bd5 Provider\u3001\u6a21\u578b\u548c\u7cfb\u7edf Key \u662f\u5426\u8fde\u901a\u3002'"></p></div><span class="status-pill" :class="modelTestMode === 'personal' ? 'status-ok' : 'status-warn'" x-text="modelTestMode === 'personal' ? '\u4e2a\u4eba\u8c03\u7528\u6d4b\u8bd5' : '\u914d\u7f6e\u8fde\u901a\u6027\u6d4b\u8bd5'"></span></div>
+                <div class="model-test-layout"><div class="panel model-test-panel"><div class="panel-header"><div><h4 class="font-semibold">&#27979;&#35797;&#21442;&#25968;</h4><p class="text-sm text-slate-500 dark:text-slate-400" x-text="modelTestMode === 'personal' ? '\u6d4b\u8bd5\u5df2\u7ed1\u5b9a\u6a21\u578b\u548c\u7528\u6237\u7ea7 API Key \u662f\u5426\u53ef\u7528\u3002' : '\u6d4b\u8bd5 Provider\u3001\u6a21\u578b\u548c\u7cfb\u7edf Key \u662f\u5426\u8fde\u901a\u3002'"></p></div></div><div x-show="currentUser?.role !== 'user'" class="p-4 pb-0"><div class="segmented"><button @click="modelTestMode='system'; ensureSystemModelTestDefaults()" :class="modelTestMode === 'system' ? 'segmented-active' : ''">&#31995;&#32479;&#37197;&#32622;</button><button @click="modelTestMode='personal'; ensurePersonalModelTestDefaults()" :class="modelTestMode === 'personal' ? 'segmented-active' : ''">&#20010;&#20154; Key</button><button @click="modelTestResult=null" class="secondary-button">&#28165;&#31354;</button></div></div><div class="model-test-form p-4" x-show="modelTestMode === 'system'"><label><span>Provider</span><select x-model="modelTestForm.provider" @change="ensureSystemModelTestDefaults()" class="form-input"><template x-for="provider in modelTestProviders()" :key="provider"><option :value="provider" x-text="provider"></option></template></select></label><label><span>Base URL</span><input class="form-input font-mono text-xs" :value="providerBaseUrl(modelTestForm.provider) || '&#26410;&#37197;&#32622;'" readonly></label><label><span>&#27169;&#22411;</span><select x-model="modelTestForm.model" class="form-input"><template x-for="model in modelTestModelsForProvider()" :key="model.alias + '-' + model.model"><option :value="model.model" x-text="`${model.alias} / ${model.model}`"></option></template></select></label><label><span>Key</span><select x-model="modelTestForm.keySuffix" class="form-input"><option value="auto">&#33258;&#21160;&#36873;&#25321;</option><template x-for="key in modelTestKeysForProvider()" :key="key.suffix"><option :value="key.suffix" x-text="key.label || ('****' + key.suffix)"></option></template></select></label></div><div class="model-test-form p-4" x-show="modelTestMode === 'personal'"><label><span>&#32465;&#23450;&#27169;&#22411;</span><input class="form-input font-mono text-xs" :value="prototypeBinding() ? `${prototypeBinding().alias} / ${prototypeBinding().model}` : '&#26242;&#26080;&#24050;&#32465;&#23450;&#27169;&#22411;'" readonly></label><label><span>&#25105;&#30340; API Key</span><select x-model="modelTestForm.apiKeyId" class="form-input"><template x-for="key in activeUserApiKeys()" :key="key.id"><option :value="key.id" x-text="`${key.name} / ${key.key_prefix}...`"></option></template></select></label></div><div class="px-4 pb-4"><label class="model-test-prompt"><span>&#27979;&#35797;&#25552;&#31034;&#35789;</span><textarea x-model="modelTestForm.prompt" class="form-input" rows="4"></textarea></label><div class="mt-3 flex justify-end gap-2"><button @click="runPrototypeModelTest()" class="primary-button" :disabled="modelTestLoading" :class="modelTestLoading ? 'opacity-70 cursor-not-allowed' : ''" x-text="modelTestLoading ? '\u6d4b\u8bd5\u4e2d...' : '\u6d4b\u8bd5\u8c03\u7528'"></button></div></div></div><div class="panel model-test-result" :class="modelTestResult?.ok ? 'model-test-result-ok' : modelTestResult && !modelTestResult.ok ? 'model-test-result-bad' : ''"><div class="panel-header"><h4 class="font-semibold">&#27979;&#35797;&#32467;&#26524;</h4><span x-show="modelTestLoading || modelTestResult" class="status-pill" :class="modelTestLoading ? 'status-warn' : modelTestResult?.ok ? 'status-ok' : 'status-bad'" x-text="modelTestLoading ? '\u6d4b\u8bd5\u4e2d' : modelTestResult?.ok ? '\u6210\u529f' : '\u5931\u8d25'"></span></div><template x-if="modelTestLoading"><div class="model-test-progress"><div class="model-test-progress-head"><strong x-text="modelTestProgressText || '\u6b63\u5728\u53d1\u8d77\u6d4b\u8bd5...'"></strong><span>&#35831;&#31245;&#20505;</span></div><div class="model-test-progress-track"><div class="model-test-progress-bar"></div></div><p>&#27491;&#22312;&#31561;&#24453;&#19978;&#28216;&#27169;&#22411;&#36820;&#22238;&#65292;&#32467;&#26524;&#23436;&#25104;&#21518;&#20250;&#33258;&#21160;&#26174;&#31034;&#12290;</p></div></template><template x-if="!modelTestResult && !modelTestLoading"><div class="model-test-empty">&#36824;&#27809;&#26377;&#25191;&#34892;&#27979;&#35797;&#12290;&#36873;&#25321;&#37197;&#32622;&#21518;&#28857;&#20987;&#8220;&#27979;&#35797;&#35843;&#29992;&#8221;&#12290;</div></template><template x-if="modelTestResult && !modelTestLoading"><div class="p-4 space-y-4"><div><div class="text-lg font-semibold" x-text="modelTestResult.title"></div><p class="mt-1 text-sm text-slate-600 dark:text-slate-300" x-text="modelTestResult.detail"></p><p x-show="modelTestResult.suggestion" class="mt-2 text-sm text-amber-700 dark:text-amber-300" x-text="modelTestResult.suggestion"></p></div><div class="model-test-result-grid"><div><span>&#27169;&#22411;</span><strong x-text="modelTestResult.model || '-'"></strong></div><div><span>Provider</span><strong x-text="modelTestResult.provider || '-'"></strong></div><div><span>Key</span><strong x-text="modelTestResult.key || '-'"></strong></div><div><span>&#24310;&#36831;</span><strong x-text="modelTestResult.latency_ms ? `${modelTestResult.latency_ms}ms` : '-'"></strong></div><div><span>Token</span><strong x-text="modelTestResult.total_tokens || '-'"></strong></div><div><span>&#26102;&#38388;</span><strong x-text="formatLogTime(modelTestResult.created_at)"></strong></div></div></div></template></div></div>
+            </section>
+
+            <section x-show="currentPage==='models' && canAccessModule('models') && currentUser?.role === 'user'" class="space-y-5"><div class="section-toolbar"><div><h3 class="section-title">&#30003;&#35831;&#27169;&#22411;</h3><p class="section-subtitle">&#36873;&#25321;&#38656;&#35201;&#20351;&#29992;&#30340;&#27169;&#22411;&#65292;&#31649;&#29702;&#21592;&#23457;&#25209;&#21518;&#23558;&#25104;&#20026;&#20320;&#30340;&#21487;&#29992;&#27169;&#22411;&#12290;</p></div><span class="status-pill" :class="pendingPrototypeRequest() ? 'status-warn' : prototypeBinding()?.status === 'active' ? 'status-ok' : prototypeBinding()?.status === 'stopped' ? 'status-bad' : ''" x-text="pendingPrototypeRequest() ? '\u5ba1\u6279\u4e2d' : prototypeBinding()?.status === 'active' ? '\u5df2\u7ed1\u5b9a' : prototypeBinding()?.status === 'stopped' ? '\u5df2\u505c\u6b62' : '\u672a\u7ed1\u5b9a'"></span></div><div x-show="prototypeFeedback" x-transition class="rounded border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-200" x-text="prototypeFeedback"></div><div class="panel model-binding-summary"><div><span class="detail-label">&#24403;&#21069;&#32465;&#23450;&#27169;&#22411;</span><template x-if="prototypeBinding()"><div><div class="text-lg font-semibold" x-text="prototypeBinding().alias"></div><div class="mt-1 font-mono text-sm text-slate-500 dark:text-slate-400" x-text="`${prototypeBinding().model} / ${prototypeBinding().provider}`"></div></div></template><p x-show="prototypeBinding()?.status === 'stopped'" class="text-sm text-red-600 dark:text-red-300">&#31649;&#29702;&#21592;&#24050;&#20572;&#27490;&#20351;&#29992;&#27492;&#27169;&#22411;&#65292;&#24674;&#22797;&#21518;&#25165;&#21487;&#32487;&#32493;&#20351;&#29992;&#12290;</p><p x-show="!prototypeBinding()" class="text-sm text-slate-500 dark:text-slate-400">&#26242;&#26080;&#24050;&#23457;&#25209;&#36890;&#36807;&#30340;&#27169;&#22411;&#65292;&#35831;&#20174;&#19979;&#26041;&#21457;&#36215;&#30003;&#35831;&#12290;</p></div><div x-show="latestPrototypeRequest()" class="model-request-latest"><span class="detail-label">&#26368;&#36817;&#19968;&#27425;&#30003;&#35831;</span><div class="flex items-center gap-2"><span class="font-semibold" x-text="latestPrototypeRequest()?.alias"></span><span class="status-pill" :class="prototypeRequestStatusClass(latestPrototypeRequest()?.status)" x-text="prototypeRequestStatusLabel(latestPrototypeRequest()?.status)"></span></div><div class="mt-2 text-xs text-slate-500" x-text="formatPrototypeTime(latestPrototypeRequest()?.created_at)"></div></div></div><div class="panel overflow-hidden"><div class="panel-header api-key-header"><div><h4 class="font-semibold">&#25105;&#30340; API Key</h4><p class="text-xs text-slate-500 dark:text-slate-400">&#29992;&#20110;&#22806;&#37096;&#31995;&#32479;&#35843;&#29992;&#32593;&#20851;&#12290;&#23436;&#25972; Key &#21487;&#36890;&#36807;&#26174;&#31034;&#25353;&#38062;&#26597;&#30475;&#65292;&#35831;&#22949;&#21892;&#20445;&#31649;&#12290;</p></div><button @click="createUserApiKey()" class="primary-button">&#29983;&#25104; Key</button></div><div x-show="newUserApiKey" class="border-b border-slate-200 bg-emerald-50 p-4 dark:border-slate-800 dark:bg-emerald-950"><div class="mb-2 text-sm font-semibold text-emerald-800 dark:text-emerald-100">&#35831;&#31435;&#21363;&#20445;&#23384;&#65292;&#21047;&#26032;&#21518;&#19981;&#20877;&#33258;&#21160;&#23637;&#24320;&#23436;&#25972; Key&#12290;</div><div class="flex gap-2"><input class="table-input font-mono text-xs" :value="newUserApiKey" readonly><button @click="navigator.clipboard?.writeText(newUserApiKey)" class="secondary-button">&#22797;&#21046;</button></div></div><div class="overflow-x-auto"><table class="data-table"><thead><tr><th>&#21517;&#31216;</th><th>Key</th><th>&#29366;&#24577;</th><th>&#21019;&#24314;&#26102;&#38388;</th><th>&#26368;&#36817;&#20351;&#29992;</th><th>&#26368;&#36817; IP</th><th></th></tr></thead><tbody><template x-for="key in userApiKeys.items || []" :key="key.id"><tr><td class="font-semibold" x-text="key.name"></td><td><input class="table-input font-mono text-xs" :type="revealedUserApiKeys[key.id] ? 'text' : 'password'" :value="revealedUserApiKeys[key.id] || (key.key_prefix + '................')" readonly></td><td><span class="status-pill" :class="key.status === 'active' ? 'status-ok' : 'status-bad'" x-text="key.status === 'active' ? '\u542f\u7528' : '\u5df2\u505c\u7528'"></span></td><td class="font-mono text-xs" x-text="formatPrototypeTime(key.created_at)"></td><td class="font-mono text-xs" x-text="formatPrototypeTime(key.last_used_at)"></td><td class="font-mono text-xs" x-text="key.last_used_ip || '-'"></td><td class="whitespace-nowrap"><button @click="revealUserApiKey(key)" class="link-button" x-text="revealedUserApiKeys[key.id] ? '\u9690\u85cf' : '\u663e\u793a'"></button><button x-show="revealedUserApiKeys[key.id]" @click="navigator.clipboard?.writeText(revealedUserApiKeys[key.id])" class="link-button">&#22797;&#21046;</button><button @click="rotateUserApiKey(key)" class="link-button">&#37325;&#26032;&#29983;&#25104;</button><button x-show="key.status === 'active'" @click="revokeUserApiKey(key)" class="danger-button">&#20572;&#29992;</button><span x-show="key.status !== 'active'" class="text-xs text-slate-400">&#24050;&#20572;&#29992;</span></td></tr></template><tr x-show="(userApiKeys.items || []).length === 0"><td colspan="7" class="text-center text-slate-500">&#26242;&#26080; API Key</td></tr></tbody></table></div></div><div class="panel call-config-panel"><div class="panel-header call-config-header"><div><h4 class="font-semibold">&#25105;&#30340;&#35843;&#29992;&#37197;&#32622;</h4><p class="text-xs text-slate-500 dark:text-slate-400">&#27169;&#22411;&#23457;&#25209;&#21644; API Key &#23601;&#32490;&#21518;&#65292;&#21487;&#30452;&#25509;&#22797;&#21046;&#35843;&#29992;&#20449;&#24687;&#21644;&#37197;&#32622;&#26679;&#20363;&#12290;</p></div><span x-show="callConfigCopyFeedback" x-transition class="status-pill status-ok" x-text="callConfigCopyFeedback"></span></div><div x-show="prototypeBinding()?.status === 'stopped'" class="call-config-empty call-config-danger">&#31649;&#29702;&#21592;&#24050;&#20572;&#27490;&#20351;&#29992;&#24403;&#21069;&#27169;&#22411;&#65292;&#26242;&#19981;&#29983;&#25104;&#21487;&#29992;&#35843;&#29992;&#37197;&#32622;&#12290;</div><div x-show="!prototypeBinding()" class="call-config-empty">&#36824;&#27809;&#26377;&#21487;&#29992;&#30340;&#27169;&#22411;&#32465;&#23450;&#12290;&#35831;&#20808;&#30003;&#35831;&#27169;&#22411;&#24182;&#31561;&#24453;&#31649;&#29702;&#21592;&#23457;&#25209;&#36890;&#36807;&#12290;</div><div x-show="prototypeBinding()?.status === 'active' && !primaryUserApiKey()" class="call-config-empty">&#24050;&#32465;&#23450;&#27169;&#22411;&#65292;&#20294;&#36824;&#27809;&#26377;&#21487;&#29992; API Key&#12290;&#35831;&#20808;&#22312;&#19978;&#26041;&#29983;&#25104; Key&#12290;</div><div x-show="callConfigReady()" class="call-config-body"><div class="call-config-grid"><div><span>Base URL</span><strong x-text="gatewayBaseUrl()"></strong></div><div><span>&#27169;&#22411;&#21517;&#31216;</span><strong x-text="callConfigBinding()?.alias || callConfigBinding()?.model || '-' "></strong></div><div><span>&#23454;&#38469;&#27169;&#22411;</span><strong x-text="callConfigBinding()?.model || '-'"></strong></div><div><span>Provider</span><strong x-text="callConfigBinding()?.provider || '-'"></strong></div><div class="call-config-key"><span>API Key</span><strong x-text="callConfigMaskedKey()"></strong></div></div><div class="call-config-actions"><button @click="copyCallConfig('key')" class="secondary-button">&#22797;&#21046; Key</button><button @click="copyCallConfig('endpoint')" class="secondary-button">&#22797;&#21046; URL + &#27169;&#22411;</button><button @click="copyCallConfig('full')" class="primary-button">&#22797;&#21046;&#23436;&#25972;&#37197;&#32622;</button></div><div class="call-config-example"><div class="call-config-tabs"><button @click="callConfigExampleTab='curl'" :class="callConfigExampleTab === 'curl' ? 'call-config-tab-active' : ''">curl</button><button @click="callConfigExampleTab='openai'" :class="callConfigExampleTab === 'openai' ? 'call-config-tab-active' : ''">OpenAI SDK</button><button @click="copyCallConfig('sample')" class="secondary-button">&#22797;&#21046;&#26679;&#20363;</button></div><pre x-text="callConfigExample()"></pre></div></div></div><div><h4 class="mb-3 font-semibold">&#21487;&#30003;&#35831;&#27169;&#22411;</h4><div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"><template x-for="model in prototypeModels" :key="model.alias"><article class="panel model-application-card"><div class="model-card-topline"><div class="model-card-icon" x-text="model.provider?.substring(0, 2).toUpperCase() || 'AI'"></div><div class="min-w-0 flex-1"><div class="flex flex-wrap items-center gap-2"><h5 class="model-card-title" x-text="model.alias"></h5><span class="status-pill" :class="model.status !== '\u4e0d\u53ef\u7528' ? 'status-ok' : 'status-bad'" x-text="model.status"></span></div><p class="model-card-model" x-text="model.model"></p></div></div><div class="model-card-meta"><div><span>Provider</span><strong x-text="model.provider"></strong></div><div><span>&#30003;&#35831;&#26041;&#24335;</span><strong x-text="prototypeBinding() ? (prototypeBinding().status === 'stopped' ? '\u91cd\u65b0\u7533\u8bf7' : '\u66f4\u6362\u5ba1\u6279') : '\u9996\u6b21\u5ba1\u6279'"></strong></div></div><p class="model-card-description" x-text="model.description"></p><button @click="submitPrototypeRequest(model)" class="model-card-action primary-button" :disabled="!canSubmitPrototypeRequest(model)" :class="!canSubmitPrototypeRequest(model) ? 'opacity-45 cursor-not-allowed' : ''" x-text="prototypeBinding()?.alias === model.alias ? (prototypeBinding()?.status === 'stopped' ? '\u5df2\u505c\u6b62\u4f7f\u7528' : '\u5f53\u524d\u5df2\u7ed1\u5b9a') : pendingPrototypeRequest() ? '\u5df2\u6709\u7533\u8bf7\u5f85\u5ba1\u6279' : prototypeBinding() ? '\u7533\u8bf7\u66f4\u6362' : '\u7533\u8bf7\u4f7f\u7528'"></button></article></template></div></div></section>
 
             <section x-show="currentPage==='models' && canAccessModule('models') && currentUser?.role === 'admin'" class="space-y-5">
                 <div class="section-toolbar">
@@ -398,11 +659,11 @@
                 </div>
             </section>
 
-            <section x-show="currentPage==='users' && currentUser?.role === 'admin'" class="space-y-5">
+            <section x-show="currentPage==='users' && currentUser?.role === 'admin'" class="space-y-5 users-page">
                 <div class="section-toolbar">
                     <div>
                         <h3 class="section-title">用户与权限</h3>
-                        <p class="section-subtitle">查看后台账号、角色和租户范围。</p>
+                        <p class="section-subtitle">管理登录账号、角色权限和租户范围。</p>
                     </div>
                     <div class="flex gap-2">
                         <button @click="openCreateUser()" class="primary-button">新增用户</button>
@@ -410,8 +671,31 @@
                     </div>
                 </div>
 
-                <div class="panel p-4">
-                    <div class="grid gap-3 md:grid-cols-[1fr_180px]">
+                <div class="users-summary-grid">
+                    <div class="users-summary-card users-summary-total">
+                        <span>全部用户</span>
+                        <strong x-text="(usersData.items || []).length"></strong>
+                        <em>系统账号总数</em>
+                    </div>
+                    <div class="users-summary-card">
+                        <span>管理员</span>
+                        <strong x-text="(usersData.items || []).filter(user => user.role === 'admin').length"></strong>
+                        <em>拥有全部管理权限</em>
+                    </div>
+                    <div class="users-summary-card">
+                        <span>运营人员</span>
+                        <strong x-text="(usersData.items || []).filter(user => user.role === 'operator').length"></strong>
+                        <em>可查看配置与日志</em>
+                    </div>
+                    <div class="users-summary-card">
+                        <span>普通用户</span>
+                        <strong x-text="(usersData.items || []).filter(user => user.role === 'user').length"></strong>
+                        <em>按绑定模型使用</em>
+                    </div>
+                </div>
+
+                <div class="panel users-filter-panel">
+                    <div class="users-filter-grid">
                         <input x-model="userSearch" class="table-input" placeholder="搜索账号、邮箱、手机号或租户">
                         <select x-model="userRoleFilter" class="table-input">
                             <option value="all">全部角色</option>
@@ -420,9 +704,18 @@
                             <option value="user">user</option>
                         </select>
                     </div>
+                    <div class="users-filter-meta">
+                        <span x-text="'当前显示 ' + filteredUsers().length + ' / ' + (usersData.items || []).length + ' 个用户'"></span>
+                    </div>
                 </div>
 
-                <div class="panel overflow-hidden">
+                <div class="panel overflow-hidden users-table-panel">
+                    <div class="panel-header">
+                        <div>
+                            <h4 class="font-semibold">账号列表</h4>
+                            <p class="section-subtitle">查看角色、模块权限和账号基础信息。</p>
+                        </div>
+                    </div>
                     <div class="overflow-x-auto">
                         <table class="data-table">
                             <thead>
@@ -440,14 +733,19 @@
                                 <template x-for="user in filteredUsers()" :key="user.id">
                                     <tr>
                                         <td>
-                                            <div class="font-semibold" x-text="user.username"></div>
-                                            <div class="text-xs text-slate-500" x-text="`ID ${user.id}`"></div>
+                                            <div class="user-account-cell">
+                                                <span class="user-avatar" x-text="(user.username || 'U').substring(0, 2).toUpperCase()"></span>
+                                                <div>
+                                                    <div class="font-semibold" x-text="user.username"></div>
+                                                    <div class="text-xs text-slate-500" x-text="`ID ${user.id}`"></div>
+                                                </div>
+                                            </div>
                                         </td>
                                         <td class="text-sm">
                                             <div x-text="user.email || '-'"></div>
                                             <div class="text-xs text-slate-500" x-text="user.phone || ''"></div>
                                         </td>
-                                        <td><span class="status-pill" :class="user.role==='admin' ? 'status-ok' : user.role==='operator' ? 'status-warn' : ''" x-text="user.role"></span></td>
+                                        <td><span class="status-pill user-role-pill" :class="user.role==='admin' ? 'status-ok' : user.role==='operator' ? 'status-warn' : ''" x-text="user.role"></span></td>
                                         <td>
                                             <div class="model-list">
                                                 <template x-for="module in effectiveUserModules(user)" :key="module">
@@ -457,7 +755,7 @@
                                             <div class="mt-1 text-xs text-slate-500" x-text="user.module_overrides ? '自定义' : '角色默认'"></div>
                                         </td>
                                         <td class="font-mono text-xs" x-text="user.tenant || '-'"></td>
-                                        <td class="font-mono text-xs" x-text="user.created_at ? user.created_at.replace('T',' ').substring(0,19) : '-'"></td>
+                                        <td class="font-mono text-xs" x-text="formatPrototypeTime(user.created_at)"></td>
                                         <td class="whitespace-nowrap">
                                             <button @click="openEditUser(user)" class="link-button">编辑</button>
                                             <button @click="deleteUser(user)" class="danger-button" :disabled="user.id === currentUser?.id" :class="user.id === currentUser?.id ? 'opacity-40' : ''">删除</button>
@@ -472,22 +770,33 @@
                     </div>
                 </div>
 
-                <div x-show="showUserModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4">
-                    <div class="w-full max-w-xl rounded bg-white p-5 shadow-xl dark:bg-slate-900">
-                        <div class="mb-4 flex items-center justify-between">
-                            <h4 class="font-semibold" x-text="editingUserId ? '编辑用户' : '新增用户'"></h4>
+                <div x-show="showUserModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4 user-modal">
+                    <div class="user-dialog">
+                        <div class="user-dialog-head">
+                            <div class="user-dialog-title">
+                                <span class="user-avatar" x-text="(userForm.username || 'U').substring(0, 2).toUpperCase()"></span>
+                                <div>
+                                    <h4 class="font-semibold" x-text="editingUserId ? '编辑用户' : '新增用户'"></h4>
+                                    <p x-text="editingUserId ? '更新账号资料、角色和模块权限。' : '创建新账号并分配角色与模块权限。'"></p>
+                                </div>
+                            </div>
                             <button @click="showUserModal=false" class="icon-button">×</button>
                         </div>
-                        <div class="space-y-3">
+                        <div class="user-dialog-body">
+                            <div class="user-form-section">
+                                <div class="user-form-section-head">
+                                    <h5>账号信息</h5>
+                                    <span x-text="editingUserId ? '可留空密码' : '必填账号密码'"></span>
+                                </div>
                             <label class="detail-field">
                                 <span>账号</span>
                                 <input x-model="userForm.username" class="table-input" placeholder="user@example.com">
                             </label>
                             <label class="detail-field">
                                 <span x-text="editingUserId ? '密码（留空则不修改）' : '密码'"></span>
-                                <input x-model="userForm.password" type="password" class="table-input" placeholder="至少 8 位">
+                                <input x-model="userForm.password" type="password" class="table-input" placeholder="至少 10 位，包含字母和数字">
                             </label>
-                            <div class="grid gap-3 md:grid-cols-2">
+                            <div class="user-form-grid">
                                 <label class="detail-field">
                                     <span>邮箱</span>
                                     <input x-model="userForm.email" type="email" class="table-input" placeholder="name@example.com">
@@ -497,7 +806,13 @@
                                     <input x-model="userForm.phone" class="table-input" placeholder="可选">
                                 </label>
                             </div>
-                            <div class="grid gap-3 md:grid-cols-2">
+                            </div>
+                            <div class="user-form-section">
+                                <div class="user-form-section-head">
+                                    <h5>身份范围</h5>
+                                    <span x-text="userForm.role + ' / ' + (userForm.tenant || 'default')"></span>
+                                </div>
+                            <div class="user-form-grid">
                                 <label class="detail-field">
                                     <span>角色</span>
                                     <select x-model="userForm.role" class="table-input" @change="if (userUseRoleDefault) userModuleSelection = roleModules(userForm.role)">
@@ -511,13 +826,17 @@
                                     <input x-model="userForm.tenant" class="table-input font-mono text-xs" placeholder="default">
                                 </label>
                             </div>
-                            <div class="detail-field">
-                                <span>模块权限</span>
-                                <label class="mb-2 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                            </div>
+                            <div class="user-form-section user-permission-section">
+                                <div class="user-form-section-head">
+                                    <h5>模块权限</h5>
+                                    <span x-text="(userUseRoleDefault ? roleModules(userForm.role) : userModuleSelection).length + ' 个模块'"></span>
+                                </div>
+                                <label class="user-default-permission">
                                     <input type="checkbox" x-model="userUseRoleDefault" @change="if (userUseRoleDefault) userModuleSelection = roleModules(userForm.role)">
                                     <span>使用角色默认权限</span>
                                 </label>
-                                <div class="grid gap-2 md:grid-cols-2">
+                                <div class="user-permission-grid">
                                     <template x-for="module in allModules()" :key="module">
                                         <label class="permission-toggle" :class="userUseRoleDefault ? 'opacity-60' : ''">
                                             <input type="checkbox" :checked="(userUseRoleDefault ? roleModules(userForm.role) : userModuleSelection).includes(module)" :disabled="userUseRoleDefault" @change="toggleUserModule(module)">
@@ -527,7 +846,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="mt-5 flex justify-end gap-2">
+                        <div class="user-dialog-actions">
                             <button @click="showUserModal=false" class="secondary-button">取消</button>
                             <button @click="saveUser()" class="primary-button">保存</button>
                         </div>
@@ -535,7 +854,7 @@
                 </div>
             </section>
 
-            <section x-show="currentPage==='config' && currentUser?.role === 'admin'" class="space-y-5">
+            <section x-show="currentPage==='config' && currentUser?.role === 'admin'" class="space-y-5 config-page">
                 <div class="section-toolbar">
                     <div>
                         <h3 class="section-title">配置管理</h3>
@@ -546,156 +865,553 @@
 
                 <div x-show="configSaved" x-transition class="rounded border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">配置已保存并生效</div>
 
+                <div class="config-tabs">
+                    <button @click="configTab='overview'" :class="configTab==='overview' ? 'config-tab-active' : ''">
+                        <span>总览体检</span>
+                        <strong x-text="configHealthCounts().errors ? configHealthCounts().errors + ' 错误' : '健康'"></strong>
+                    </button>
+                    <button @click="configTab='providers'" :class="configTab==='providers' ? 'config-tab-active' : ''">
+                        <span>Provider</span>
+                        <strong x-text="providerNames().length"></strong>
+                    </button>
+                    <button @click="configTab='aliases'" :class="configTab==='aliases' ? 'config-tab-active' : ''">
+                        <span>模型别名</span>
+                        <strong x-text="Object.keys(configData.aliases || {}).length"></strong>
+                    </button>
+                    <button @click="configTab='routes'" :class="configTab==='routes' ? 'config-tab-active' : ''">
+                        <span>路由规则</span>
+                        <strong x-text="(configData.routes || []).length"></strong>
+                    </button>
+                    <button @click="configTab='keypools'" :class="configTab==='keypools' ? 'config-tab-active' : ''">
+                        <span>密钥池</span>
+                        <strong x-text="Object.keys(configData.keypools || {}).length"></strong>
+                    </button>
+                    <button @click="configTab='fallbacks'" :class="configTab==='fallbacks' ? 'config-tab-active' : ''">
+                        <span>降级配置</span>
+                        <strong x-text="(configData.fallbacks || []).length"></strong>
+                    </button>
+                </div>
+
+                <div x-show="configTab==='overview'" class="config-overview-dashboard">
+                    <div class="config-overview-card config-overview-health" :class="configHealthCounts().errors ? 'config-overview-danger' : configHealthCounts().warnings ? 'config-overview-warning' : 'config-overview-ok'">
+                        <span>配置健康</span>
+                        <strong x-text="configHealthCounts().errors ? configHealthCounts().errors + ' 个错误' : configHealthCounts().warnings ? configHealthCounts().warnings + ' 个提醒' : '无异常'"></strong>
+                        <em>保存前优先处理错误项</em>
+                    </div>
+                    <div class="config-overview-card">
+                        <span>Provider</span>
+                        <strong x-text="providerNames().length"></strong>
+                        <em x-text="keypoolCards().filter(item => item.keyCount === 0).length + ' 个未配置 Key'"></em>
+                    </div>
+                    <div class="config-overview-card">
+                        <span>模型别名</span>
+                        <strong x-text="Object.keys(configData.aliases || {}).length"></strong>
+                        <em x-text="Object.entries(configData.aliases || {}).filter(([, model]) => !inferProviderForModel(model)).length + ' 个未匹配 Provider'"></em>
+                    </div>
+                    <div class="config-overview-card">
+                        <span>路由规则</span>
+                        <strong x-text="(configData.routes || []).length"></strong>
+                        <em x-text="(configData.routes || []).filter(route => route.pattern === '*').length + ' 个默认路由'"></em>
+                    </div>
+                    <div class="config-overview-card">
+                        <span>计价覆盖</span>
+                        <strong x-text="pricingPrototypeSummary().configured + '/' + pricingPrototypeSummary().total"></strong>
+                        <em>已写入价格规则</em>
+                    </div>
+                </div>
+
+                <div x-show="configTab==='overview'" class="panel config-health-panel">
+                    <div class="config-health-summary">
+                        <div>
+                            <h4 class="font-semibold">配置体检</h4>
+                            <p class="section-subtitle">保存前检查路由、Provider、模型和 Key 范围是否一致。</p>
+                        </div>
+                        <div class="config-health-metrics">
+                            <span class="health-metric health-error" x-show="configHealthCounts().errors" x-text="`${configHealthCounts().errors} 个错误`"></span>
+                            <span class="health-metric health-warning" x-show="configHealthCounts().warnings" x-text="`${configHealthCounts().warnings} 个提醒`"></span>
+                            <span class="health-metric health-ok" x-show="!configHealthCounts().errors && !configHealthCounts().warnings">无异常</span>
+                            <span class="health-metric" x-text="`${configHealthCounts().providers} 个 Provider`"></span>
+                            <span class="health-metric" x-text="`${configHealthCounts().models} 个模型`"></span>
+                        </div>
+                    </div>
+                    <div class="config-health-list">
+                        <template x-for="item in configHealthItems()" :key="item.level + item.title + item.detail">
+                            <div class="config-health-item" :class="`config-health-${item.level}`">
+                                <span class="health-dot"></span>
+                                <div>
+                                    <div class="config-health-item-head">
+                                        <strong x-text="item.title"></strong>
+                                        <span class="status-pill" :class="item.level === 'error' ? 'status-bad' : item.level === 'warning' ? 'status-warn' : 'status-ok'" x-text="item.level === 'error' ? '错误' : item.level === 'warning' ? '提醒' : '正常'"></span>
+                                    </div>
+                                    <p x-text="item.detail"></p>
+                                </div>
+                            </div>
+                        </template>
+                        <div x-show="configHealthItems().length === 0" class="config-health-empty">当前配置没有发现异常。</div>
+                    </div>
+                </div>
+
+                <div x-show="configTab==='overview'" class="panel pricing-prototype-panel">
+                    <div class="panel-header pricing-prototype-header">
+                        <div>
+                            <h4 class="font-semibold">&#27169;&#22411;&#35745;&#20215;&#35268;&#21017;&#21407;&#22411;</h4>
+                            <p class="section-subtitle">&#25353;&#20154;&#27665;&#24065; / &#30334;&#19975; token &#23637;&#31034;&#65307;&#25104;&#26412;&#20844;&#24335;&#24050;&#29992;&#26410;&#21629;&#20013;&#36755;&#20837;&#12289;&#32531;&#23384;&#21629;&#20013;&#36755;&#20837;&#21644;&#36755;&#20986;&#20215;&#12290;</p>
+                        </div>
+                        <span class="status-pill status-warn" x-text="pricingPrototypeSummary().configured + '/' + pricingPrototypeSummary().total + ' &#24050;&#20889;&#20837;'"></span>
+                    </div>
+                    <div class="pricing-prototype-note">
+                        <strong>&#35745;&#31639;&#35828;&#26126;</strong>
+                        <span>&#29616;&#22312; usage &#34920;&#20250;&#35760;&#24405; cached_input_tokens / uncached_input_tokens&#12290;&#35745;&#31639;&#65306;&#26410;&#21629;&#20013;&#36755;&#20837; token * &#36755;&#20837;&#20215; + &#32531;&#23384;&#21629;&#20013; token * &#32531;&#23384;&#20215; + &#36755;&#20986; token * &#36755;&#20986;&#20215;&#12290;</span>
+                    </div>
+                    <div class="pricing-coverage-grid">
+                        <div><span>规则总数</span><strong x-text="pricingPrototypeSummary().total"></strong></div>
+                        <div><span>已写入</span><strong x-text="pricingPrototypeSummary().configured"></strong></div>
+                        <div><span>待补齐</span><strong x-text="pricingPrototypeSummary().total - pricingPrototypeSummary().configured"></strong></div>
+                    </div>
+                    <div class="overflow-x-auto pricing-table-wrap">
+                        <table class="data-table pricing-prototype-table">
+                            <thead>
+                                <tr>
+                                    <th>Provider</th>
+                                    <th>&#27169;&#22411;</th>
+                                    <th>&#36755;&#20837;&#65288;&#26410;&#21629;&#20013;&#65289;</th>
+                                    <th>&#36755;&#20986;</th>
+                                    <th>&#32531;&#23384;&#21629;&#20013;&#36755;&#20837;</th>
+                                    <th>&#19978;&#19979;&#25991;</th>
+                                    <th>&#29366;&#24577;</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="row in pricingPrototypeRows()" :key="row.providerLabel + row.model">
+                                    <tr>
+                                        <td class="font-mono text-xs" x-text="row.providerLabel"></td>
+                                        <td class="font-mono text-xs" x-text="row.model"></td>
+                                        <td class="font-mono" x-text="'\u00a5' + row.input.toFixed(2)"></td>
+                                        <td class="font-mono" x-text="'\u00a5' + row.output.toFixed(2)"></td>
+                                        <td class="font-mono" x-text="'\u00a5' + row.cachedInput.toFixed(2)"></td>
+                                        <td class="font-mono" x-text="row.context"></td>
+                                        <td><span class="status-pill" :class="row.statusClass" x-text="row.statusLabel"></span></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <div class="config-grid">
-                    <div class="panel">
-                        <div class="panel-header"><h4 class="font-semibold">路由规则</h4><button @click="configData.routes.push({pattern:'', provider:''})" class="link-button">添加</button></div>
+                    <div x-show="configTab==='providers'" class="provider-workbench">
+                        <aside class="panel provider-workbench-list">
+                            <div class="panel-header provider-workbench-list-head">
+                                <div>
+                                    <h4 class="font-semibold">Provider</h4>
+                                    <p class="section-subtitle" x-text="providerConfigCards().length + ' 个通道'"></p>
+                                </div>
+                                <button @click="addProviderBaseUrl()" class="icon-button" title="添加 Provider">+</button>
+                            </div>
+                            <div class="provider-select-list">
+                                <template x-for="provider in providerConfigCards()" :key="provider.name">
+                                    <button @click="selectConfigProvider(provider.name)" class="provider-select-item" :class="selectedProviderConfig()?.name === provider.name ? 'provider-select-active' : ''">
+                                        <div>
+                                            <strong x-text="provider.name"></strong>
+                                            <span x-text="provider.modelCount + ' 个模型 / ' + provider.keyCount + ' 个 Key'"></span>
+                                        </div>
+                                        <span class="provider-status-dot" :class="'provider-status-' + provider.status"></span>
+                                    </button>
+                                </template>
+                            </div>
+                        </aside>
+
+                        <section class="panel provider-detail-workspace" x-show="selectedProviderConfig()">
+                            <div class="provider-workbench-hero">
+                                <div class="provider-identity">
+                                    <span class="provider-monogram" x-text="(selectedProviderConfig()?.name || 'AI').substring(0, 2).toUpperCase()"></span>
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <h4 x-text="selectedProviderConfig()?.name"></h4>
+                                            <span class="status-pill" :class="selectedProviderConfig()?.status === 'ok' ? 'status-ok' : selectedProviderConfig()?.status === 'warning' ? 'status-warn' : 'status-bad'" x-text="selectedProviderConfig()?.statusLabel"></span>
+                                        </div>
+                                        <p>模型访问通道与密钥配置</p>
+                                    </div>
+                                </div>
+                                <div class="provider-workbench-actions">
+                                    <button @click="openProviderWizard()" class="secondary-button">接入新模型</button>
+                                    <button @click="editKeyPool(selectedProviderConfig()?.name)" class="primary-button">管理密钥</button>
+                                </div>
+                            </div>
+
+                            <div class="provider-overview-metrics">
+                                <div><span>模型</span><strong x-text="selectedProviderConfig()?.modelCount || 0"></strong></div>
+                                <div><span>Key</span><strong x-text="selectedProviderConfig()?.keyCount || 0"></strong></div>
+                                <div><span>路由</span><strong x-text="selectedProviderConfig()?.routeCount || 0"></strong></div>
+                                <div><span>策略</span><strong x-text="selectedProviderConfig()?.strategy || '-'"></strong></div>
+                            </div>
+
+                            <div class="provider-detail-section">
+                                <div class="provider-detail-section-head">
+                                    <h5>连接地址</h5>
+                                    <button @click="deleteProviderBaseUrl(selectedProviderConfig()?.name)" class="danger-button">删除 URL</button>
+                                </div>
+                                <label class="detail-field">
+                                    <span>Base URL</span>
+                                    <input :value="providerBaseUrl(selectedProviderConfig()?.name)" @input="configData.provider_base_urls[selectedProviderConfig()?.name] = $event.target.value" class="table-input font-mono text-xs" placeholder="https://example.com/v1">
+                                </label>
+                            </div>
+
+                            <div class="provider-detail-section">
+                                <div class="provider-detail-section-head">
+                                    <h5>对应模型</h5>
+                                    <span class="detail-caption" x-text="providerModels(selectedProviderConfig()?.name).length + ' 项'"></span>
+                                </div>
+                                <div class="model-list" x-show="providerModels(selectedProviderConfig()?.name).length">
+                                    <template x-for="model in providerModels(selectedProviderConfig()?.name)" :key="model.source + '-' + model.value">
+                                        <span class="model-pill" x-text="model.label"></span>
+                                    </template>
+                                </div>
+                                <div class="detail-empty" x-show="!providerModels(selectedProviderConfig()?.name).length">暂未关联模型</div>
+                            </div>
+
+                            <div class="provider-detail-section">
+                                <div class="provider-detail-section-head">
+                                    <h5>计价规则</h5>
+                                    <span class="detail-caption">人民币 / 百万 token</span>
+                                </div>
+                                <div class="overflow-x-auto" x-show="selectedProviderPricing().length">
+                                    <table class="data-table provider-price-table">
+                                        <thead><tr><th>模型</th><th>输入</th><th>输出</th><th>缓存输入</th><th>上下文</th></tr></thead>
+                                        <tbody>
+                                            <template x-for="price in selectedProviderPricing()" :key="price.model">
+                                                <tr>
+                                                    <td class="font-mono text-xs" x-text="price.model"></td>
+                                                    <td x-text="'\u00a5' + price.input.toFixed(2)"></td>
+                                                    <td x-text="'\u00a5' + price.output.toFixed(2)"></td>
+                                                    <td x-text="'\u00a5' + price.cachedInput.toFixed(2)"></td>
+                                                    <td x-text="price.context"></td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="detail-empty" x-show="!selectedProviderPricing().length">暂未配置计价规则</div>
+                            </div>
+                        </section>
+                    </div>
+
+                    <div x-show="configTab==='routes'" class="panel config-routes-panel">
+                        <div class="panel-header config-routes-header">
+                            <div>
+                                <h4 class="font-semibold">路由规则</h4>
+                                <p class="section-subtitle">根据模型名称匹配 Provider，星号规则通常作为兜底。</p>
+                            </div>
+                            <button @click="configData.routes.push({pattern:'', provider:''})" class="primary-button">添加路由</button>
+                        </div>
+                        <div class="config-routes-summary">
+                            <div>
+                                <span>规则总数</span>
+                                <strong x-text="(configData.routes || []).length"></strong>
+                            </div>
+                            <div>
+                                <span>默认路由</span>
+                                <strong x-text="(configData.routes || []).filter(route => route.pattern === '*').length"></strong>
+                            </div>
+                            <div>
+                                <span>通配规则</span>
+                                <strong x-text="(configData.routes || []).filter(route => String(route.pattern || '').includes('*') && route.pattern !== '*').length"></strong>
+                            </div>
+                            <div>
+                                <span>待补齐</span>
+                                <strong x-text="(configData.routes || []).filter(route => !route.pattern || !route.provider || !providerNames().includes(route.provider)).length"></strong>
+                            </div>
+                        </div>
                         <div class="overflow-x-auto">
-                            <table class="data-table">
-                                <thead><tr><th>Pattern</th><th>Provider</th><th></th></tr></thead>
+                            <datalist id="provider-options">
+                                <template x-for="provider in providerNames()" :key="provider">
+                                    <option :value="provider"></option>
+                                </template>
+                            </datalist>
+                            <table class="data-table config-routes-table">
+                                <thead><tr><th>匹配规则</th><th>目标 Provider</th><th>类型</th><th>状态</th><th></th></tr></thead>
                                 <tbody>
                                     <template x-for="(route, i) in configData.routes || []" :key="i">
                                         <tr>
-                                            <td><input x-model="route.pattern" class="table-input"></td>
-                                            <td><input x-model="route.provider" class="table-input"></td>
-                                            <td><button @click="deleteRoute(i)" class="danger-button">删除</button></td>
+                                            <td>
+                                                <input x-model="route.pattern" class="table-input font-mono text-xs" placeholder="例如 qwen-plus 或 *">
+                                                <div class="route-hint" x-text="route.pattern === '*' ? '未命中具体规则时使用' : '匹配模型名称或别名'"></div>
+                                            </td>
+                                            <td>
+                                                <input x-model="route.provider" list="provider-options" class="table-input font-mono text-xs" placeholder="选择或输入 Provider">
+                                            </td>
+                                            <td>
+                                                <span class="model-pill" x-text="route.pattern === '*' ? '默认路由' : String(route.pattern || '').includes('*') ? '通配匹配' : '精确匹配'"></span>
+                                            </td>
+                                            <td>
+                                                <span class="status-pill" :class="!route.pattern || !route.provider || !providerNames().includes(route.provider) ? 'status-bad' : 'status-ok'" x-text="!route.pattern ? '缺少 Pattern' : !route.provider ? '缺少 Provider' : !providerNames().includes(route.provider) ? 'Provider 不存在' : '有效'"></span>
+                                            </td>
+                                            <td class="whitespace-nowrap"><button @click="deleteRoute(i)" class="danger-button">删除</button></td>
                                         </tr>
                                     </template>
+                                    <tr x-show="(configData.routes || []).length === 0">
+                                        <td colspan="5" class="text-center text-slate-500">暂无路由规则</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
                     </div>
 
-                    <div class="panel">
-                        <div class="panel-header">
-                            <h4 class="font-semibold">模型别名</h4>
+                    <div x-show="configTab==='aliases'" class="panel config-aliases-panel">
+                        <div class="panel-header config-aliases-header">
+                            <div>
+                                <h4 class="font-semibold">模型别名</h4>
+                                <p class="section-subtitle">维护用户侧可见名称与真实模型名称的对应关系。</p>
+                            </div>
                             <div class="flex items-center gap-2">
                                 <button @click="openModelWizard()" class="primary-button">新增模型</button>
                                 <button @click="addAlias()" class="link-button">添加别名</button>
                             </div>
                         </div>
+                        <div class="config-aliases-summary">
+                            <div>
+                                <span>别名总数</span>
+                                <strong x-text="Object.keys(configData.aliases || {}).length"></strong>
+                            </div>
+                            <div>
+                                <span>可用模型</span>
+                                <strong x-text="Object.entries(configData.aliases || {}).filter(([alias, model]) => modelHealthInfo(alias, model).ok === true).length"></strong>
+                            </div>
+                            <div>
+                                <span>未测试</span>
+                                <strong x-text="Object.entries(configData.aliases || {}).filter(([alias, model]) => modelHealthInfo(alias, model).ok === null).length"></strong>
+                            </div>
+                            <div>
+                                <span>未匹配 Provider</span>
+                                <strong x-text="Object.entries(configData.aliases || {}).filter(([, model]) => !inferProviderForModel(model)).length"></strong>
+                            </div>
+                        </div>
                         <div class="overflow-x-auto">
-                            <table class="data-table">
-                                <thead><tr><th>别名</th><th>模型</th><th>是否可用</th><th></th></tr></thead>
+                            <table class="data-table config-aliases-table">
+                                <thead><tr><th>用户侧别名</th><th>实际模型</th><th>Provider</th><th>状态</th><th></th></tr></thead>
                                 <tbody>
                                     <template x-for="[alias, model] in Object.entries(configData.aliases || {})" :key="alias">
                                         <tr>
-                                            <td><input :value="alias" @change="renameAlias(alias, $event.target.value)" class="table-input font-mono text-xs"></td>
-                                            <td><input x-model="configData.aliases[alias]" class="table-input"></td>
+                                            <td>
+                                                <input :value="alias" @change="renameAlias(alias, $event.target.value)" class="table-input font-mono text-xs" placeholder="例如 qwen-plus">
+                                                <div class="alias-hint">用户调用时填写的模型名</div>
+                                            </td>
+                                            <td>
+                                                <input x-model="configData.aliases[alias]" class="table-input font-mono text-xs" placeholder="真实模型名称">
+                                                <div class="alias-hint" x-text="model || '保存前请补齐真实模型'"></div>
+                                            </td>
+                                            <td>
+                                                <span class="model-pill" x-text="inferProviderForModel(model) || '未匹配'"></span>
+                                                <div class="alias-hint" x-text="inferProviderForModel(model) ? '根据路由规则推断' : '请补充路由规则'"></div>
+                                            </td>
                                             <td>
                                                 <span class="status-pill" :class="modelHealthInfo(alias, model).ok === true ? 'status-ok' : modelHealthInfo(alias, model).ok === false ? 'status-bad' : 'status-warn'" x-text="modelHealthInfo(alias, model).label"></span>
-                                                <div class="mt-1 max-w-[260px] text-xs text-slate-500 dark:text-slate-400" x-text="modelHealthInfo(alias, model).detail"></div>
+                                                <div class="alias-health-detail" x-text="modelHealthInfo(alias, model).detail"></div>
                                             </td>
-                                            <td><button @click="deleteAlias(alias)" class="danger-button">删除</button></td>
+                                            <td class="whitespace-nowrap"><button @click="deleteAlias(alias)" class="danger-button">删除</button></td>
                                         </tr>
                                     </template>
+                                    <tr x-show="Object.keys(configData.aliases || {}).length === 0">
+                                        <td colspan="5" class="text-center text-slate-500">暂无模型别名</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
                     </div>
 
-                    <div class="panel">
-                        <div class="panel-header">
-                            <h4 class="font-semibold">密钥池</h4>
-                            <button @click="openProviderWizard()" class="primary-button">新增 Provider</button>
+                    <div x-show="configTab==='keypools'" class="panel config-keypools-panel">
+                        <div class="panel-header config-keypools-header">
+                            <div>
+                                <h4 class="font-semibold">密钥池</h4>
+                                <p class="section-subtitle">管理 Provider 的 Key、轮询策略和模型使用范围。</p>
+                            </div>
+                            <button @click="openProviderWizard()" class="primary-button">模型接入向导</button>
                         </div>
-                        <div class="overflow-x-auto">
-                            <table class="data-table">
-                                <thead><tr><th>提供商</th><th>策略</th><th>密钥数</th><th></th></tr></thead>
-                                <tbody>
-                                    <template x-for="[name, kp] in Object.entries(configData.keypools || {})" :key="name">
-                                        <tr>
-                                            <td x-text="name"></td>
-                                            <td>
-                                                <select x-model="kp.strategy" class="table-input">
-                                                    <option value="round-robin">round-robin</option>
-                                                    <option value="least-used">least-used</option>
-                                                    <option value="random">random</option>
-                                                </select>
-                                            </td>
-                                            <td x-text="(kp.keys||[]).length"></td>
-                                            <td><button @click="editKeyPool(name)" class="link-button">编辑</button></td>
-                                        </tr>
-                                    </template>
-                                </tbody>
-                            </table>
+                        <div class="config-keypools-summary">
+                            <div><span>密钥池</span><strong x-text="keypoolCards().length"></strong></div>
+                            <div><span>Key 总数</span><strong x-text="keypoolCards().reduce((sum, item) => sum + item.keyCount, 0)"></strong></div>
+                            <div><span>未配置 Key</span><strong x-text="keypoolCards().filter(item => item.keyCount === 0).length"></strong></div>
+                            <div><span>限定模型 Key</span><strong x-text="keypoolCards().reduce((sum, item) => sum + item.models.length, 0)"></strong></div>
+                        </div>
+                        <div class="config-keypool-card-grid">
+                            <template x-for="card in keypoolCards()" :key="card.name">
+                                <article class="config-keypool-card">
+                                    <div class="config-keypool-card-head">
+                                        <div class="provider-identity">
+                                            <span class="provider-monogram" x-text="card.name.substring(0, 2).toUpperCase()"></span>
+                                            <div>
+                                                <h5 x-text="card.name"></h5>
+                                                <p x-text="providerBaseUrl(card.name) || '未配置 Base URL'"></p>
+                                            </div>
+                                        </div>
+                                        <span class="status-pill" :class="card.status === 'ok' ? 'status-ok' : 'status-warn'" x-text="card.statusLabel"></span>
+                                    </div>
+                                    <div class="config-keypool-stats">
+                                        <div><span>策略</span><strong x-text="card.strategy"></strong></div>
+                                        <div><span>Key</span><strong x-text="card.keyCount"></strong></div>
+                                        <div><span>限速</span><strong x-text="card.rateLimit"></strong></div>
+                                    </div>
+                                    <div class="config-keypool-models">
+                                        <span>模型范围</span>
+                                        <div class="model-list" x-show="card.models.length">
+                                            <template x-for="model in card.models.slice(0, 6)" :key="card.name + '-' + model">
+                                                <span class="model-pill" x-text="model"></span>
+                                            </template>
+                                            <span x-show="card.models.length > 6" class="model-pill" x-text="'+' + (card.models.length - 6)"></span>
+                                        </div>
+                                        <p x-show="!card.models.length" x-text="card.allModelKeys ? card.allModelKeys + ' 个 Key 可调用全部模型' : '暂未限定模型范围'"></p>
+                                    </div>
+                                    <div class="config-keypool-actions">
+                                        <select x-model="configData.keypools[card.name].strategy" class="table-input">
+                                            <option value="round-robin">round-robin</option>
+                                            <option value="least-used">least-used</option>
+                                            <option value="random">random</option>
+                                        </select>
+                                        <button @click="editKeyPool(card.name)" class="primary-button">编辑密钥</button>
+                                    </div>
+                                </article>
+                            </template>
+                            <div x-show="keypoolCards().length === 0" class="detail-empty">暂无密钥池</div>
                         </div>
                     </div>
 
-                    <div class="panel">
-                        <div class="panel-header"><h4 class="font-semibold">降级配置</h4><button @click="configData.fallbacks.push({from:'',to:'',model_map:{}})" class="link-button">添加</button></div>
-                        <div class="overflow-x-auto">
-                            <table class="data-table">
-                                <thead><tr><th>From</th><th>To</th><th>Model Map</th><th></th></tr></thead>
-                                <tbody>
-                                    <template x-for="(fb, i) in configData.fallbacks || []" :key="i">
-                                        <tr>
-                                            <td><input x-model="fb.from" class="table-input"></td>
-                                            <td><input x-model="fb.to" class="table-input"></td>
-                                            <td class="max-w-[220px] truncate text-xs" x-text="JSON.stringify(fb.model_map||{})"></td>
-                                            <td><button @click="deleteFallback(i)" class="danger-button">删除</button></td>
-                                        </tr>
-                                    </template>
-                                </tbody>
-                            </table>
+                    <div x-show="configTab==='fallbacks'" class="panel config-fallbacks-panel">
+                        <div class="panel-header config-fallbacks-header">
+                            <div>
+                                <h4 class="font-semibold">降级配置</h4>
+                                <p class="section-subtitle">当上游 Provider 不可用时，将请求切换到备用 Provider。</p>
+                            </div>
+                            <button @click="configData.fallbacks.push({from:'',to:'',model_map:{}})" class="primary-button">添加降级</button>
+                        </div>
+                        <div class="config-fallbacks-summary">
+                            <div><span>规则总数</span><strong x-text="(configData.fallbacks || []).length"></strong></div>
+                            <div><span>待补齐</span><strong x-text="(configData.fallbacks || []).filter(fb => !fb.from || !fb.to).length"></strong></div>
+                            <div><span>模型映射</span><strong x-text="(configData.fallbacks || []).filter(fb => Object.keys(fb.model_map || {}).length > 0).length"></strong></div>
+                            <div><span>Provider 覆盖</span><strong x-text="new Set((configData.fallbacks || []).flatMap(fb => [fb.from, fb.to].filter(Boolean))).size"></strong></div>
+                        </div>
+                        <div class="config-fallback-card-grid">
+                            <template x-for="(fb, i) in configData.fallbacks || []" :key="i">
+                                <article class="config-fallback-card">
+                                    <div class="config-fallback-flow">
+                                        <label>
+                                            <span>主 Provider</span>
+                                            <input x-model="fb.from" list="provider-options" class="table-input font-mono text-xs" placeholder="from provider">
+                                        </label>
+                                        <div class="fallback-arrow">→</div>
+                                        <label>
+                                            <span>备用 Provider</span>
+                                            <input x-model="fb.to" list="provider-options" class="table-input font-mono text-xs" placeholder="to provider">
+                                        </label>
+                                    </div>
+                                    <div class="config-fallback-meta">
+                                        <span class="status-pill" :class="!fb.from || !fb.to ? 'status-bad' : 'status-ok'" x-text="!fb.from ? '缺少主 Provider' : !fb.to ? '缺少备用 Provider' : '有效'"></span>
+                                        <span class="model-pill" x-text="Object.keys(fb.model_map || {}).length ? Object.keys(fb.model_map || {}).length + ' 个模型映射' : '无模型映射'"></span>
+                                    </div>
+                                    <div class="config-fallback-map">
+                                        <span>Model Map</span>
+                                        <code x-text="JSON.stringify(fb.model_map || {})"></code>
+                                    </div>
+                                    <div class="config-fallback-actions">
+                                        <button @click="deleteFallback(i)" class="danger-button">删除</button>
+                                    </div>
+                                </article>
+                            </template>
+                            <div x-show="(configData.fallbacks || []).length === 0" class="config-fallback-empty">
+                                暂无降级配置。当前所有 Provider 按路由直接调用，不会自动切换备用通道。
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div x-show="showProviderWizard" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4">
-                    <div class="w-full max-w-xl rounded bg-white p-5 shadow-xl dark:bg-slate-900">
-                        <div class="mb-4 flex items-center justify-between">
-                            <h4 class="font-semibold">新增 Provider</h4>
+                <div x-show="showProviderWizard" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4 provider-wizard-modal">
+                    <div class="provider-wizard-dialog">
+                        <div class="provider-wizard-head">
+                            <div>
+                                <h4 class="font-semibold">模型接入向导</h4>
+                                <p>一次性补齐 Provider、Base URL、路由规则和首个 Key。</p>
+                            </div>
                             <button @click="showProviderWizard=false" class="icon-button">×</button>
                         </div>
-                        <div class="space-y-3">
+                        <div class="provider-wizard-body">
+                            <label class="detail-field provider-wizard-field-full">
+                                <span>选择模型</span>
+                                <select x-model="providerWizard.selectedModel" @change="syncProviderWizardFromModel()" class="table-input font-mono text-xs">
+                                    <option value="">不选择模型，仅新增 Provider</option>
+                                    <template x-for="model in modelAccessOptions()" :key="model.id">
+                                    <option :value="model.id" x-text="model.label"></option>
+                                    </template>
+                                </select>
+                            </label>
+                            <div x-show="selectedProviderWizardModel()" class="wizard-model-preview provider-wizard-field-full">
+                                <div>
+                                    <span>模型别名</span>
+                                    <strong x-text="selectedProviderWizardModel()?.alias"></strong>
+                                </div>
+                                <div>
+                                    <span>实际模型</span>
+                                    <strong x-text="selectedProviderWizardModel()?.model"></strong>
+                                </div>
+                                <div>
+                                    <span>Key 状态</span>
+                                    <strong x-text="selectedProviderWizardModel()?.hasKeys ? `已配置 ${selectedProviderWizardModel()?.keyCount} 个` : '未配置 Key'"></strong>
+                                </div>
+                            </div>
                             <label class="detail-field">
-                                <span>Provider 名称</span>
-                                <input x-model="providerWizard.name" class="table-input font-mono text-xs" placeholder="my-provider">
+                                <span>Provider 通道名称</span>
+                                <input x-model="providerWizard.name" class="table-input font-mono text-xs" placeholder="qwen">
+                                <small class="text-xs text-slate-500 dark:text-slate-400">这里填写供应商通道名，例如 qwen；模型名请放在“路由匹配模型”。</small>
                             </label>
                             <label class="detail-field">
                                 <span>Base URL</span>
                                 <input x-model="providerWizard.baseUrl" class="table-input font-mono text-xs" placeholder="https://example.com/v1">
                             </label>
-                            <div class="grid gap-3 md:grid-cols-2">
-                                <label class="detail-field">
-                                    <span>策略</span>
-                                    <select x-model="providerWizard.strategy" class="table-input">
-                                        <option value="round-robin">round-robin</option>
-                                        <option value="least-used">least-used</option>
-                                        <option value="random">random</option>
-                                    </select>
-                                </label>
-                                <label class="detail-field">
-                                    <span>限速</span>
-                                    <input x-model.number="providerWizard.rateLimit" type="number" min="1" class="table-input font-mono text-xs">
-                                </label>
-                            </div>
+                            <label class="detail-field">
+                                <span>路由匹配模型</span>
+                                <input x-model="providerWizard.routePattern" class="table-input font-mono text-xs" placeholder="qwen3.6-plus">
+                            </label>
+                            <label class="detail-field">
+                                <span>策略</span>
+                                <select x-model="providerWizard.strategy" class="table-input">
+                                    <option value="round-robin">round-robin</option>
+                                    <option value="least-used">least-used</option>
+                                    <option value="random">random</option>
+                                </select>
+                            </label>
+                            <label class="detail-field">
+                                <span>限速</span>
+                                <input x-model.number="providerWizard.rateLimit" type="number" min="1" class="table-input font-mono text-xs">
+                            </label>
                             <label class="detail-field">
                                 <span>第一把 Key</span>
                                 <input x-model="providerWizard.key" class="table-input font-mono text-xs" type="password" placeholder="可留空，稍后在 Provider 详情中添加">
                             </label>
                         </div>
-                        <div class="mt-5 flex justify-end gap-2">
+                        <div class="provider-wizard-actions">
                             <button @click="showProviderWizard=false" class="secondary-button">取消</button>
-                            <button @click="saveProviderWizard()" class="primary-button">添加到配置</button>
+                            <button @click="saveProviderWizard()" class="primary-button">保存接入配置</button>
                         </div>
                     </div>
                 </div>
 
-                <div x-show="showModelWizard" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4">
-                    <div class="w-full max-w-xl rounded bg-white p-5 shadow-xl dark:bg-slate-900">
-                        <div class="mb-4 flex items-center justify-between">
-                            <h4 class="font-semibold">新增模型</h4>
+                <div x-show="showModelWizard" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4 model-wizard-modal">
+                    <div class="model-wizard-dialog">
+                        <div class="model-wizard-head">
+                            <div>
+                                <h4 class="font-semibold">新增模型</h4>
+                                <p>创建用户侧别名，并将真实模型路由到指定 Provider。</p>
+                            </div>
                             <button @click="showModelWizard=false" class="icon-button">×</button>
                         </div>
-                        <div class="space-y-3">
+                        <div class="model-wizard-body">
                             <label class="detail-field">
                                 <span>模型别名</span>
                                 <input x-model="modelWizard.alias" class="table-input font-mono text-xs" placeholder="gemini-pro">
+                                <small>用户调用时使用的模型名称。</small>
                             </label>
                             <label class="detail-field">
                                 <span>实际模型名</span>
                                 <input x-model="modelWizard.model" class="table-input font-mono text-xs" placeholder="gemini-2.5-pro">
+                                <small>上游 Provider 实际识别的模型名称。</small>
                             </label>
                             <label class="detail-field">
                                 <span>Provider</span>
@@ -704,26 +1420,53 @@
                                         <option :value="provider" x-text="provider"></option>
                                     </template>
                                 </select>
+                                <small>保存时会自动补充对应路由规则。</small>
                             </label>
                             <label class="detail-field">
                                 <span>Base URL</span>
                                 <input class="table-input font-mono text-xs" :value="providerBaseUrl(modelWizard.provider)" readonly>
+                                <small>来自当前 Provider 配置。</small>
                             </label>
+                            <div class="model-wizard-preview">
+                                <div>
+                                    <span>调用模型名</span>
+                                    <strong x-text="modelWizard.alias || '待填写'"></strong>
+                                </div>
+                                <div>
+                                    <span>实际模型</span>
+                                    <strong x-text="modelWizard.model || '待填写'"></strong>
+                                </div>
+                                <div>
+                                    <span>目标 Provider</span>
+                                    <strong x-text="modelWizard.provider || '待选择'"></strong>
+                                </div>
+                                <div>
+                                    <span>Base URL</span>
+                                    <strong x-text="providerBaseUrl(modelWizard.provider) || '未配置'"></strong>
+                                </div>
+                            </div>
                         </div>
-                        <div class="mt-5 flex justify-end gap-2">
+                        <div class="model-wizard-actions">
                             <button @click="showModelWizard=false" class="secondary-button">取消</button>
                             <button @click="saveModelWizard()" class="primary-button">添加到配置</button>
                         </div>
                     </div>
                 </div>
 
-                <div x-show="editingKeyPool !== null" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4">
-                    <div class="w-full max-w-2xl rounded bg-white p-5 shadow-xl dark:bg-slate-900">
-                        <div class="mb-4 flex items-center justify-between">
-                            <h4 class="font-semibold">提供商详情 - <span x-text="editingKeyPool"></span></h4>
+                <div x-show="editingKeyPool !== null" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4 keypool-modal">
+                    <div class="keypool-dialog">
+                        <div class="keypool-dialog-head">
+                            <div class="provider-identity">
+                                <span class="provider-monogram" x-text="(editingKeyPool || 'AI').substring(0, 2).toUpperCase()"></span>
+                                <div>
+                                    <h4 class="font-semibold">提供商详情 - <span x-text="editingKeyPool"></span></h4>
+                                    <p>维护 Base URL、密钥和每把 Key 的可用模型范围。</p>
+                                </div>
+                            </div>
                             <button @click="editingKeyPool=null; editKeyPoolBaseUrl=''; editKeyPoolSelectedModel=''; plainKeysVisible=false" class="icon-button">×</button>
                         </div>
-                        <div class="mb-4 grid gap-3 md:grid-cols-2">
+                        <div class="keypool-dialog-body">
+                        <div class="keypool-provider-summary">
                             <label class="detail-field">
                                 <span>Base URL</span>
                                 <input x-model="editKeyPoolBaseUrl" class="table-input font-mono text-xs" placeholder="https://example.com/v1">
@@ -737,19 +1480,53 @@
                                 </select>
                                 <input x-show="!providerModels(editingKeyPool).length" class="table-input text-xs" value="暂无模型映射" readonly>
                             </label>
+                            <div class="keypool-modal-stats">
+                                <div><span>Key 数量</span><strong x-text="editKeyPoolKeys.length"></strong></div>
+                                <div><span>关联模型</span><strong x-text="providerModels(editingKeyPool).length"></strong></div>
+                                <div><span>明文状态</span><strong x-text="plainKeysVisible ? '已显示' : '已隐藏'"></strong></div>
+                            </div>
                         </div>
-                        <div class="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">密钥</div>
-                        <div class="max-h-[50vh] space-y-2 overflow-y-auto">
+                        <div class="keypool-keys-head">
+                            <div>
+                                <h5>密钥列表</h5>
+                                <p>未勾选模型时，该 Key 默认可用于当前 Provider 下全部模型。</p>
+                            </div>
+                            <button @click="editKeyPoolKeys.push({value:'', allowed_models: editKeyPoolSelectedModel ? [editKeyPoolSelectedModel] : []})" class="secondary-button">添加密钥</button>
+                        </div>
+                        <div class="keypool-key-list">
                             <template x-for="(key, i) in editKeyPoolKeys" :key="i">
-                                <div class="flex gap-2">
-                                    <input x-model="editKeyPoolKeys[i]" class="table-input" :type="plainKeysVisible ? 'text' : 'password'" placeholder="****">
-                                    <button @click="deleteEditingKey(i)" class="danger-button">删除</button>
+                                <div class="key-scope-editor">
+                                    <div class="key-editor-top">
+                                        <div>
+                                            <span class="detail-label" x-text="'Key #' + (i + 1)"></span>
+                                            <input x-model="key.value" class="table-input font-mono text-xs" :type="plainKeysVisible ? 'text' : 'password'" placeholder="****">
+                                        </div>
+                                        <button @click="deleteEditingKey(i)" class="danger-button">删除</button>
+                                    </div>
+                                    <div class="key-scope-head">
+                                        <div>
+                                            <div class="text-xs font-semibold text-slate-600 dark:text-slate-300">允许模型范围</div>
+                                            <div class="text-xs text-slate-500 dark:text-slate-400" x-text="editingKeyCoversAllModels(key) ? '未勾选时表示此 Key 可用于当前 Provider 下全部模型。' : '此 Key 只会用于已勾选的模型。'"></div>
+                                        </div>
+                                        <button @click="key.allowed_models=[]" class="link-button" x-show="!editingKeyCoversAllModels(key)">设为全部模型</button>
+                                    </div>
+                                    <div class="model-scope-list" x-show="providerModels(editingKeyPool).length">
+                                        <template x-for="model in providerModels(editingKeyPool)" :key="`${i}-${model.source}-${model.value}`">
+                                            <label class="model-scope-option">
+                                                <input type="checkbox" :checked="key.allowed_models?.includes(model.value)" @change="toggleEditingKeyModel(i, model.value)">
+                                                <span x-text="model.label"></span>
+                                            </label>
+                                        </template>
+                                    </div>
+                                    <div x-show="!providerModels(editingKeyPool).length" class="mt-2 text-xs text-slate-500 dark:text-slate-400">当前 Provider 还没有模型映射，保存模型路由后可选择范围。</div>
                                 </div>
                             </template>
+                            <div x-show="editKeyPoolKeys.length === 0" class="keypool-empty">暂无密钥。可以点击“添加密钥”创建第一把 Key。</div>
                         </div>
-                        <div class="mt-4 flex justify-between gap-2">
-                            <button @click="editKeyPoolKeys.push('')" class="secondary-button">添加密钥</button>
+                        </div>
+                        <div class="keypool-dialog-actions">
                             <button @click="revealKeyPoolKeys()" x-show="!plainKeysVisible" class="secondary-button">显示明文密钥</button>
+                            <button @click="editingKeyPool=null; editKeyPoolBaseUrl=''; editKeyPoolSelectedModel=''; plainKeysVisible=false" class="secondary-button">取消</button>
                             <button @click="saveKeyPool()" class="primary-button">保存</button>
                         </div>
                     </div>
@@ -759,6 +1536,6 @@
     </div>
 </div>
 
-<script src="/static/app.js"></script>
+<script src="/static/app.js?v=20260527-log-grid-align"></script>
 </body>
 </html>

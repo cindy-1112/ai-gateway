@@ -1,6 +1,7 @@
 import pytest
 from app.keypool.pool import KeyPool
 from app.keypool.health import KeyHealth, KeyStatus
+from app.config import ProviderKeyConfig
 
 
 def test_round_robin_selection():
@@ -47,3 +48,42 @@ def test_mark_invalid_permanent():
 def test_key_health_cooldown_expiry():
     health = KeyHealth(key_suffix="sk-1", status=KeyStatus.RATE_LIMITED, cooldown_seconds=0)
     assert health.is_available()
+
+
+def test_select_key_by_allowed_model():
+    pool = KeyPool(
+        provider="qwen",
+        keys=[
+            ProviderKeyConfig(value="sk-qwen-plus", allowed_models=["qwen3.6-plus"]),
+            ProviderKeyConfig(value="sk-qwen-max", allowed_models=["qwen-max"]),
+        ],
+        strategy="round-robin",
+    )
+
+    assert pool.select(model="qwen3.6-plus") == "sk-qwen-plus"
+    assert pool.select(model="qwen-max") == "sk-qwen-max"
+
+
+def test_key_without_allowed_models_is_provider_wide():
+    pool = KeyPool(
+        provider="qwen",
+        keys=[
+            ProviderKeyConfig(value="sk-provider-wide"),
+        ],
+        strategy="round-robin",
+    )
+
+    assert pool.select(model="qwen3.6-plus") == "sk-provider-wide"
+
+
+def test_no_key_for_requested_model():
+    pool = KeyPool(
+        provider="qwen",
+        keys=[
+            ProviderKeyConfig(value="sk-qwen-max", allowed_models=["qwen-max"]),
+        ],
+        strategy="round-robin",
+    )
+
+    with pytest.raises(RuntimeError, match="model qwen3.6-plus"):
+        pool.select(model="qwen3.6-plus")

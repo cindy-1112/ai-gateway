@@ -6,10 +6,10 @@ from app.logging.usage import UsageEventBroker, UsageLogger
 from app.db.database import Database
 
 
-def test_access_logger_writes_json(tmp_path):
+async def test_access_logger_writes_json(tmp_path):
     log_path = tmp_path / "access.log"
     logger = AccessLogger(str(log_path))
-    logger.log(
+    await logger.log(
         request_id="req-001",
         tenant="default",
         model="gpt-4o",
@@ -29,6 +29,46 @@ def test_access_logger_writes_json(tmp_path):
     assert data["request_id"] == "req-001"
     assert data["model"] == "gpt-4o"
     assert data["total_tokens"] == 80
+
+
+async def test_access_logger_records_to_db(tmp_path):
+    log_path = tmp_path / "access.log"
+    db_path = tmp_path / "test.db"
+    db = Database(f"sqlite+aiosqlite:///{db_path}")
+    await db.init()
+    logger = AccessLogger(str(log_path), db)
+
+    await logger.log(
+        request_id="req-db",
+        tenant="default",
+        model="gpt-4o",
+        provider="openai",
+        api_key_suffix="xxx1",
+        status=200,
+        latency_ms=100,
+        prompt_tokens=50,
+        completion_tokens=30,
+        total_tokens=80,
+        stream=False,
+        user_id=7,
+        username="user@example.com",
+        user_api_key_prefix="gw-user_abc",
+        model_binding_id=3,
+    )
+    logger.close()
+
+    from sqlalchemy import select
+    from app.db.models import RequestLogRecord
+
+    async with db.session() as session:
+        result = await session.execute(select(RequestLogRecord))
+        records = result.scalars().all()
+
+    assert len(records) == 1
+    assert records[0].request_id == "req-db"
+    assert records[0].username == "user@example.com"
+    assert records[0].model_binding_id == 3
+    await db.close()
 
 
 async def test_usage_logger_records_to_db(tmp_path):
