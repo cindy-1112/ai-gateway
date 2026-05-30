@@ -22,4 +22,4 @@ class ZhipuProvider(BaseProvider):
         return {"Authorization": f"Bearer {api_key}"}
 
     def chat_endpoint(self) -> str:
-        return "/v1/chat/completions"
+        return "/chat/completions"

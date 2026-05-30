@@ -101,6 +101,8 @@ function gatewayApp() {
             'qwen-plus': { ok: true, label: '可用', detail: 'qwen-plus，total_tokens 18' },
             'qwen3.6-plus': { ok: true, label: '可用', detail: 'qwen/qwen3.6-plus 已通过 moma.cmecloud.cn 连通性测试' },
             'qwen/qwen3.6-plus': { ok: true, label: '可用', detail: 'moma.cmecloud.cn/v1，真实模型 qwen/qwen3.6-plus 已测试通过' },
+            'glm': { ok: true, label: '可用', detail: 'GLM-4.7-FlashX 已通过 zhipu 连通性测试，total_tokens 73' },
+            'GLM-4.7-FlashX': { ok: true, label: '可用', detail: '智谱 GLM-4.7-FlashX 已测试通过' },
         },
         editingKeyPool: null,
         editKeyPoolBaseUrl: '',
@@ -611,6 +613,49 @@ function gatewayApp() {
             });
         },
 
+        async copyText(text) {
+            const value = String(text || '');
+            if (!value) return false;
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(value);
+                return true;
+            }
+            const textarea = document.createElement('textarea');
+            textarea.value = value;
+            textarea.setAttribute('readonly', '');
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            textarea.style.top = '0';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            try {
+                return document.execCommand('copy');
+            } finally {
+                document.body.removeChild(textarea);
+            }
+        },
+
+        async copyWithFeedback(text, label = '已复制') {
+            try {
+                const ok = await this.copyText(text);
+                this.callConfigCopyFeedback = ok ? label : '复制失败';
+                setTimeout(() => {
+                    if (this.callConfigCopyFeedback === label || this.callConfigCopyFeedback === '复制失败') {
+                        this.callConfigCopyFeedback = '';
+                    }
+                }, 1800);
+                return ok;
+            } catch (error) {
+                console.error(error);
+                this.callConfigCopyFeedback = '复制失败';
+                setTimeout(() => {
+                    if (this.callConfigCopyFeedback === '复制失败') this.callConfigCopyFeedback = '';
+                }, 1800);
+                return false;
+            }
+        },
+
         gatewayBaseUrl() {
             return this.prototypeWorkflow.gateway_base_url || `${window.location.origin}/v1`;
         },
@@ -659,31 +704,28 @@ function gatewayApp() {
                 text = `Base URL: ${this.gatewayBaseUrl()}\nModel: ${binding.alias || binding.model}`;
                 label = '\u5df2\u590d\u5236 URL \u548c\u6a21\u578b';
             } else if (kind === 'sample') {
-                text = this.callConfigExample(true);
+                const apiKey = await this.revealPrimaryUserApiKey();
+                text = this.callConfigExample(true, apiKey);
                 label = '\u5df2\u590d\u5236\u6837\u4f8b';
             } else {
                 const apiKey = await this.revealPrimaryUserApiKey();
                 text = [
-                    `Base URL: ${this.gatewayBaseUrl()}`,
                     `API Key: ${apiKey}`,
+                    `Base URL: ${this.gatewayBaseUrl()}`,
                     `Model: ${binding.alias || binding.model}`,
                     `Actual Model: ${binding.model}`,
                     `Provider: ${binding.provider}`,
                 ].join('\n');
                 label = '\u5df2\u590d\u5236\u5b8c\u6574\u914d\u7f6e';
             }
-            await navigator.clipboard?.writeText(text);
-            this.callConfigCopyFeedback = label;
-            setTimeout(() => {
-                if (this.callConfigCopyFeedback === label) this.callConfigCopyFeedback = '';
-            }, 1800);
+            await this.copyWithFeedback(text, label);
         },
 
-        callConfigExample(forCopy = false) {
+        callConfigExample(forCopy = false, revealedApiKey = '') {
             const binding = this.callConfigBinding();
             const model = binding?.alias || binding?.model || 'your-model-alias';
             const baseUrl = this.gatewayBaseUrl();
-            const apiKey = 'YOUR_API_KEY';
+            const apiKey = forCopy && revealedApiKey ? revealedApiKey : 'YOUR_API_KEY';
             if (this.callConfigExampleTab === 'openai') {
                 return [
                     'from openai import OpenAI',
@@ -1084,8 +1126,10 @@ function gatewayApp() {
 
         async copyRegistrationCode(request) {
             if (!request?.invite_code) return;
-            await navigator.clipboard?.writeText(request.invite_code);
-            this.registrationFeedback = `已复制 ${request.target} 的注册码`;
+            const copied = await this.copyText(request.invite_code);
+            this.registrationFeedback = copied
+                ? `已复制 ${request.target} 的注册码`
+                : '复制失败，请手动选中注册码复制';
         },
 
         async loadUsers() {
@@ -1835,7 +1879,6 @@ function gatewayApp() {
                 anthropic: 'https://api.anthropic.com',
                 deepseek: 'https://api.deepseek.com',
                 qwen: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-                wenxin: 'https://qianfan.baidubce.com/v2',
                 zhipu: 'https://open.bigmodel.cn/api/paas/v4',
                 volcengine: 'https://ark.cn-beijing.volces.com/api/coding/v3',
                 openrouter: 'https://openrouter.ai/api/v1',
